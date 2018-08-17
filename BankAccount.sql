@@ -1,8 +1,8 @@
 use master;
 
 /*
-The next segment of code is to manage de error of create an existing data base,
-if the db exists, the code delete it and create a new db
+El siguiente segmento de código es para manejar el error de crearuna base de datos
+existente, si la base de datos existe se borra y se crea una nueva.
 */
 
 if(exists(select * from sysdatabases where name = 'BankAccount'))
@@ -11,7 +11,7 @@ begin
 end
 
 
---// DB creation if it doesn't exists.
+--// Creación de la base de datos si no existe.
 
 create database [BankAccount]
 go
@@ -20,13 +20,13 @@ use [BankAccount]
 go
 
 
---// Tables creation
+--// Creación de tablas.
 
 create table Admin
 (
 	id int identity primary key not null,
 	nombre nvarchar(50) not null,
-	valorDocId int not null,
+	valorDocId nvarchar(10) not null,
 	password nvarchar(50) not null
 )
 
@@ -34,7 +34,7 @@ create table Cliente
 (
 	id int identity primary key not null,
 	nombre nvarchar(50) not null,
-	valorDocId int not null,
+	valorDocId nvarchar(10) not null,
 	contrasena nvarchar(20) not null
 )
 
@@ -133,6 +133,6 @@ insert into Admin(nombre, password, valorDocId)
 go
 
 
---// This code is to don't have to restart MSQLMS if an error occurs.
+--// Este código es para no tener que reiniciar la DB si ocurre un error con MSQLMS
 use [master];
 go
