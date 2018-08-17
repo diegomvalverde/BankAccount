@@ -94,6 +94,11 @@ create table EstadoCuenta
 	cantmMaxATM int not null,
 )
 
+--// Inserciones importantes
+
+insert into Admin(nombre, password, valorDocId)
+	values('Admin', 'Admin', 0);
+go
 
 
 --// This code is to don't have to restart MSQLMS if an error occurs.
