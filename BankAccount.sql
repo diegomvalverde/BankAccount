@@ -94,6 +94,38 @@ create table EstadoCuenta
 	cantmMaxATM int not null,
 )
 
+
+create table MovimientoInteres
+(
+	id int identity primary key not null,
+	fecha date not null,
+	saldo money not null,
+	interesDiario float not null
+)
+
+create table TipoMovInteres
+(
+	id int identity primary key not null,
+	nombre nvarchar(50) not null,
+)
+
+create table Evento
+(
+	id int identity primary key not null,
+	postIP nvarchar(16) not null,
+	postTime date not null,
+	xmlAntes xml not null,
+	xmlDepues xml not null,
+	entidadID bit not null, --//?
+)
+
+create table TipoEvento
+(
+	id int identity primary key not null,
+	nombre nvarchar(50) not null,
+)
+
+
 --// Inserciones importantes
 
 insert into Admin(nombre, password, valorDocId)
