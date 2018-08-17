@@ -10,13 +10,25 @@ begin
 	drop database [BankAccount]
 end
 
---// Tables creation
+
+--// DB creation if it doesn't exists.
 
 create database [BankAccount]
 go
 
 use [BankAccount]
 go
+
+
+--// Tables creation
+
+create table Admin
+(
+	id int identity primary key not null,
+	nombre nvarchar(50) not null,
+	valorDocId int not null,
+	password nvarchar(50) not null
+)
 
 create table Cliente
 (
@@ -45,6 +57,7 @@ create table Cuenta
 (
 	id int identity primary key not null,
 	idCliente int constraint FKCuenta_Cliente references Cliente(id) not null, --#LaLinea
+	idTipoCuenta int constraint FKCuenta_TipoCuenta references TipoCuenta(id) not null,
 	saldo money not null,
 	fechaCreacion date not null,
 	interesesAcumulados money not null
@@ -65,6 +78,20 @@ create table Movimiento
 	postIp nvarchar(216) not null,
 	postTime time not null,
 	invisible bit not null
+)
+
+create table EstadoCuenta
+(
+	id int identity primary key not null,
+	idCuenta int constraint FKEstadoCuenta_Cuenta references Cuenta(id) not null,
+	nombre nvarchar(50) not null,
+	fechaInicial date not null,
+	fechaFinal date not null,
+	saldoInicial money not null,
+	saldoFinal money not null,
+	saldoMinimo money not null,
+	cantMaxManual int not null,
+	cantmMaxATM int not null,
 )
 
 
