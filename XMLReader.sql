@@ -18,15 +18,15 @@ exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @XML
 
 declare @fechaIncio int = 0;
 declare @fechaFinal int = 10;
+declare @minSec int = 0;
+declare @maxSec int = 0;
 
-declare @ClientesCrear table
+declare @ClientesCrear table 
 (
 	sec int identity(1,1),
 	docId nvarchar(10),
 	nombre nvarchar(50)
 )
-
-
 
 while @fechaIncio <= @fechaFinal
 	begin
@@ -37,6 +37,7 @@ while @fechaIncio <= @fechaFinal
 		select docId, nombre
 		from openxml(@handle, 'XML/termData/term') with (docId int, nombre nvarchar(50));
 
+		--//select @minSec = min(sec); Qué es sec?
 		set @fechaIncio = @fechaIncio + 1;
 	end;
 
