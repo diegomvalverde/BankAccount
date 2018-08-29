@@ -22,12 +22,12 @@ go
 
 --// Creación de tablas.
 
-create table Admin
+create table Administrador
 (
 	id int identity primary key not null,
 	nombre nvarchar(50) not null,
-	valorDocId nvarchar(10) not null,
-	password nvarchar(50) not null
+	valorDocId nvarchar(50) not null,
+	contrasenna nvarchar(50) not null
 )
 
 create table Cliente
@@ -35,7 +35,7 @@ create table Cliente
 	id int identity primary key not null,
 	nombre nvarchar(50) not null,
 	valorDocId nvarchar(10) not null,
-	contrasena nvarchar(20) not null
+	contrasenna nvarchar(20) not null
 )
 
 create table TipoCuenta
@@ -128,7 +128,7 @@ create table TipoEvento
 
 --// Inserciones importantes
 
-insert into Admin(nombre, password, valorDocId)
+insert into Administrador(nombre, contrasenna, valorDocId)
 	values('Admin', 'Admin', 0);
 go
 
@@ -136,3 +136,4 @@ go
 --// Este código es para no tener que reiniciar la DB si ocurre un error con MSQLMS
 use [master];
 go
+

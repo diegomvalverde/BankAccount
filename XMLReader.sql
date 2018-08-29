@@ -2,18 +2,13 @@
 Script para la simulación de entrada de grands cantidades de datos, los datos
 se leen de un xml.
 */
-
 use BankAccount
 go
-
-create procedure xmlreader
-as
-begin
 
 declare @xmlCliente xml
 set @XMLCliente = 
 (
-	select * from openrowset(bulk 'C:\Bases\Clientes.xml', single_blob) as data
+	select * from openrowset(bulk 'C:\Bases\Administrador.xml', single_blob) as data
 )
 
 declare @xmlAdmin xml
@@ -22,11 +17,6 @@ set @xmlAdmin =
 	select * from openrowset(bulk 'C:\Bases\Administrador.xml', single_blob) as data
 )
 
-declare @xmlOperaciones xml
-set @xmlOperaciones = 
-(
-	select * from openrowset(bulk 'C:\Bases\Operaciones.xml', single_blob) as data
-)
 
 declare @xmlTipoCuenta xml
 set @xmlTipoCuenta = 
@@ -59,7 +49,6 @@ declare @fechaFinal int = 10;
 declare @minSec int = 0;
 declare @maxSec int = 0;
 
-exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @xmlCliente
 
 declare @ClientesCrear table 
 (
@@ -85,16 +74,76 @@ declare @AdminsCrear table
 	nombre nvarchar(50)
 )
 
+declare @TiposCuentaCrear table
+(
+	nombre nvarchar(50),
+	tasaInteres float,
+	saldoMin money,
+	cantMaxMAnual int,
+	cantMaxATM int,
+	multaSaldoMin money,
+	multaCantMaxManual money,
+	multaCantmaxATM money,
+	mulaSaldoNegativo money,
+	cargoServicio money
+)
+
+declare @TipoEventoCrear table
+(
+	descripcion nvarchar(70),
+	nombre nvarchar(50)
+)
 
 
 /*
-Creacion de los asministradores
+Cargar los administradores del xml
+*/ 
+
+exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @xmlAdmin  
+
+insert @AdminsCrear(nombre, idAdmin, contrasenna)
+		select nombre, valorDocId, contrasenna
+		from openxml(@handle, '/dataset/Administrador') with (nombre nvarchar(50), valorDocId nvarchar(50), contrasenna nvarchar(50));
+
+/*
+Cargar los tipos de cuenta del xml
 */
 
-insert @AdminsCrear (idAdmin, nombre, contrasenna)
-		select valorDocId, nombre
-		from openxml(@handle, 'dataset/Administrador') with (valorDocId nvarchar, nombre nvarchar(50));
+exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @xmlTipoCuenta
 
+insert @TiposCuentaCrear(cargoServicio, mulaSaldoNegativo, multaCantmaxATM, multaCantMaxManual, multaSaldoMin, cantMaxATM, cantMaxMAnual,
+					saldoMin, tasaInteres, nombre)
+
+		select cargoXservicio, multaSaldoNegativo, multaQMaxATM, multaQMaxManual, multaSaldoMinimo, QMaxATM, QMaxManual, saldoMinimo, 
+				tasaInteres, nombre
+		from openxml(@handle, '/dataset/TipoCuenta') with (cargoXservicio money, multaSaldoNegativo money, multaQMaxATM money, 
+															multaQMaxManual money, multaSaldoMinimo money, QMaxATM int, QMaxManual int, 
+															saldoMinimo money, tasaInteres int, nombre nvarchar(50));
+
+/*
+Cargar los tipos de cuenta del xml
+*/ 
+
+exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @xmlTipoEvento 
+
+insert @TipoEventoCrear(nombre, descripcion)
+		select nombre, descripcion
+		from openxml(@handle, '/dataset/TipoEvento') with (nombre nvarchar(50), descripcion nvarchar(70));
+
+  
+
+
+
+
+/*
+set identity_insert Administrador on 
+insert into Administrador(nombre, contrasenna, valorDocId) 
+		select nombre, contrasenna, idAdmin
+		from @AdminsCrear
+set identity_insert Administrador  off
+*/
+
+/*
 /* 
 While para mapear el XML por fechas ya agregar los movimientos a las tablas
 */
@@ -123,9 +172,7 @@ while @fechaIncio <= @fechaFinal
 		--// select @minSec = min(sec); Qué es sec?
 		set @fechaIncio = @fechaIncio + 1;
 	end;
+	*/
 
-	end
-
-go
-use master
-go
+	use master
+	go
