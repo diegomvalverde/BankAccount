@@ -5,6 +5,11 @@ se leen de un xml.
 use BankAccount
 go
 
+
+/*
+Variables para los xml
+*/
+
 declare @xmlCliente xml
 set @XMLCliente = 
 (
@@ -50,6 +55,10 @@ declare @minSec int = 0;
 declare @maxSec int = 0;
 
 
+/*
+Creacion de las tablas temporales
+*/
+
 declare @ClientesCrear table 
 (
 	sec int identity(1,1),
@@ -85,15 +94,30 @@ declare @TiposCuentaCrear table
 	multaCantMaxManual money,
 	multaCantmaxATM money,
 	mulaSaldoNegativo money,
-	cargoServicio money
+	cargoServicio money,
+	id int
 )
 
 declare @TipoEventoCrear table
 (
 	descripcion nvarchar(70),
-	nombre nvarchar(50)
+	nombre nvarchar(50),
+	id int
 )
 
+declare @TipoMovimientoCrear table
+(
+	nombre nvarchar(100),
+	id int, 
+	descripcion nvarchar(200)
+)
+
+declare @TipoMovInteresCrear table
+(
+	nombre nvarchar(50),
+	descripcion nvarchar(70),
+	id int
+)
 
 /*
 Cargar los administradores del xml
@@ -111,54 +135,53 @@ Cargar los tipos de cuenta del xml
 
 exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @xmlTipoCuenta
 
-insert @TiposCuentaCrear(cargoServicio, mulaSaldoNegativo, multaCantmaxATM, multaCantMaxManual, multaSaldoMin, cantMaxATM, cantMaxMAnual,
+insert @TiposCuentaCrear(id, cargoServicio, mulaSaldoNegativo, multaCantmaxATM, multaCantMaxManual, multaSaldoMin, cantMaxATM, cantMaxMAnual,
 					saldoMin, tasaInteres, nombre)
 
-		select cargoXservicio, multaSaldoNegativo, multaQMaxATM, multaQMaxManual, multaSaldoMinimo, QMaxATM, QMaxManual, saldoMinimo, 
+		select id, cargoXservicio, multaSaldoNegativo, multaQMaxATM, multaQMaxManual, multaSaldoMinimo, QMaxATM, QMaxManual, saldoMinimo, 
 				tasaInteres, nombre
-		from openxml(@handle, '/dataset/TipoCuenta') with (cargoXservicio money, multaSaldoNegativo money, multaQMaxATM money, 
+		from openxml(@handle, '/dataset/TipoCuenta') with (id int, cargoXservicio money, multaSaldoNegativo money, multaQMaxATM money, 
 															multaQMaxManual money, multaSaldoMinimo money, QMaxATM int, QMaxManual int, 
 															saldoMinimo money, tasaInteres int, nombre nvarchar(50));
 
 /*
-Cargar los tipos de cuenta del xml
+Cargar los tipos de evento del xml
 */ 
 
 exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @xmlTipoEvento 
 
-insert @TipoEventoCrear(nombre, descripcion)
-		select nombre, descripcion
-		from openxml(@handle, '/dataset/TipoEvento') with (nombre nvarchar(50), descripcion nvarchar(70));
-
-  
-
-
-
+insert @TipoEventoCrear(id, nombre, descripcion)
+		select id, nombre, descripcion
+		from openxml(@handle, '/dataset/TipoEvento') with (id int, nombre nvarchar(50), descripcion nvarchar(70));
 
 /*
-set identity_insert Administrador on 
-insert into Administrador(nombre, contrasenna, valorDocId) 
-		select nombre, contrasenna, idAdmin
-		from @AdminsCrear
-set identity_insert Administrador  off
-*/
+Cargar los tipos de movimientos del xml
+*/ 
+
+exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @xmlTipoMovimiento 
+
+insert @TipoMovimientoCrear(id, nombre, descripcion)
+		select id, nombre, descripcion
+		from openxml(@handle, '/dataset/TipoMovimiento') with (id int, nombre nvarchar(100), descripcion nvarchar(200));
 
 /*
+Cargar los tipos de movimientos interes del xml
+*/ 
+
+exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @XMLTipoMovimientoInteres
+
+insert @TipoMovInteresCrear(id, nombre, descripcion)
+		select id, nombre, descripcion
+		from openxml(@handle, '/dataset/TipoMovimientoInteres') with (id int, nombre nvarchar(50), descripcion nvarchar(70));
+    
+
 /* 
 While para mapear el XML por fechas ya agregar los movimientos a las tablas
 */
 
 while @fechaIncio <= @fechaFinal
 	begin
-		delete @ClientesCrear;
-
-		/* 
-		Insercion de los clientes en la tabla temporal
-		*/
-
-		insert @ClientesCrear (docId, nombre)
-		select docId, nombre
-		from openxml(@handle, 'dataset/Cliente') with (docId int, nombre nvarchar(50));
+		delete ;
 
 		/*
 		Insercion de las cuentas en la tabla temporal
@@ -172,7 +195,7 @@ while @fechaIncio <= @fechaFinal
 		--// select @minSec = min(sec); Qué es sec?
 		set @fechaIncio = @fechaIncio + 1;
 	end;
-	*/
+
 
 	use master
 	go
