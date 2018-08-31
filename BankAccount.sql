@@ -128,8 +128,6 @@ create table TipoEvento
 
 --// Inserciones importantes
 
-insert into Administrador(nombre, contrasenna, valorDocId)
-	values('Admin', 'Admin', 0);
 go
 
 
