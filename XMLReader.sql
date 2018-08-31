@@ -10,47 +10,47 @@ go
 Variables para los xml
 */
 
-declare @xmlCliente xml
-set @XMLCliente = 
-(
-	select * from openrowset(bulk 'C:\Bases\Administrador.xml', single_blob) as data
-)
+--declare @xmlOperaciones xml
+--set @xmlOperaciones = 
+--(
+--	select * from openrowset(bulk 'C:\Bases\Operaciones.xml', single_blob) as x
+--);
 
 declare @xmlAdmin xml
 set @xmlAdmin = 
 (
-	select * from openrowset(bulk 'C:\Bases\Administrador.xml', single_blob) as data
-)
+	select * from openrowset(bulk 'C:\Bases\Administrador.xml', single_blob) as x
+);
 
 
 declare @xmlTipoCuenta xml
 set @xmlTipoCuenta = 
 (
-	select * from openrowset(bulk 'C:\Bases\TipoCuenta.xml', single_blob) as data
-)
+	select * from openrowset(bulk 'C:\Bases\TipoCuenta.xml', single_blob) as x
+);
 
 declare @xmlTipoEvento xml
 set @xmlTipoEvento = 
 (
-	select * from openrowset(bulk 'C:\Bases\TipoEvento.xml', single_blob) as data
-)
+	select * from openrowset(bulk 'C:\Bases\TipoEvento.xml', single_blob) as x
+);
 
 declare @xmlTipoMovimiento xml
 set @xmlTipoMovimiento = 
 (
-	select * from openrowset(bulk 'C:\Bases\TipoMovimiento.xml', single_blob) as data
-)
+	select * from openrowset(bulk 'C:\Bases\TipoMovimiento.xml', single_blob) as x
+);
 
-declare @XMLTipoMovimientoInteres xml
-set @XMLTipoMovimientoInteres = 
+declare @xmlTipoMovimientoInteres xml
+set @xmlTipoMovimientoInteres = 
 (
-	select * from openrowset(bulk 'C:\Bases\TipoMovimientoInteres.xml', single_blob) as data
-)
+	select * from openrowset(bulk 'C:\Bases\TipoMovimientoInteres.xml', single_blob) as x
+);
 
 declare @handle int;  
 declare @PrepareXmlStatus int;  
-declare @fechaIncio int = 0;
-declare @fechaFinal int = 10;
+declare @fechaIncio int;
+declare @fechaFinal int;
 declare @minSec int = 0;
 declare @maxSec int = 0;
 
@@ -63,8 +63,9 @@ declare @ClientesCrear table
 (
 	sec int identity(1,1),
 	docId nvarchar(10),
-	nombre nvarchar(50)
-)
+	nombre nvarchar(50),
+	contrasenna nvarchar(50)
+);
 
 declare @CuentasCrear table
 (
@@ -73,7 +74,7 @@ declare @CuentasCrear table
 	tipoCuenta int,
 	fechaCreacion date,
 	saldo money
-)
+);
 
 declare @AdminsCrear table
 (
@@ -81,7 +82,7 @@ declare @AdminsCrear table
 	idAdmin nvarchar(50),
 	contrasenna nvarchar(50),
 	nombre nvarchar(50)
-)
+);
 
 declare @TiposCuentaCrear table
 (
@@ -96,34 +97,40 @@ declare @TiposCuentaCrear table
 	mulaSaldoNegativo money,
 	cargoServicio money,
 	id int
-)
+);
 
 declare @TipoEventoCrear table
 (
 	descripcion nvarchar(70),
 	nombre nvarchar(50),
 	id int
-)
+);
 
 declare @TipoMovimientoCrear table
 (
 	nombre nvarchar(100),
 	id int, 
 	descripcion nvarchar(200)
-)
+);
 
 declare @TipoMovInteresCrear table
 (
 	nombre nvarchar(50),
 	descripcion nvarchar(70),
 	id int
-)
+);
+
+declare @Fechas table
+(
+	id int identity(1,1),
+	fecha date 
+);
 
 /*
 Cargar los administradores del xml
 */ 
 
-exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @xmlAdmin  
+exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @xmlAdmin ; 
 
 insert @AdminsCrear(nombre, idAdmin, contrasenna)
 		select nombre, valorDocId, contrasenna
@@ -133,7 +140,7 @@ insert @AdminsCrear(nombre, idAdmin, contrasenna)
 Cargar los tipos de cuenta del xml
 */
 
-exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @xmlTipoCuenta
+exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @xmlTipoCuenta;
 
 insert @TiposCuentaCrear(id, cargoServicio, mulaSaldoNegativo, multaCantmaxATM, multaCantMaxManual, multaSaldoMin, cantMaxATM, cantMaxMAnual,
 					saldoMin, tasaInteres, nombre)
@@ -148,7 +155,7 @@ insert @TiposCuentaCrear(id, cargoServicio, mulaSaldoNegativo, multaCantmaxATM, 
 Cargar los tipos de evento del xml
 */ 
 
-exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @xmlTipoEvento 
+exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @xmlTipoEvento;
 
 insert @TipoEventoCrear(id, nombre, descripcion)
 		select id, nombre, descripcion
@@ -158,7 +165,7 @@ insert @TipoEventoCrear(id, nombre, descripcion)
 Cargar los tipos de movimientos del xml
 */ 
 
-exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @xmlTipoMovimiento 
+exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @xmlTipoMovimiento ;
 
 insert @TipoMovimientoCrear(id, nombre, descripcion)
 		select id, nombre, descripcion
@@ -168,29 +175,54 @@ insert @TipoMovimientoCrear(id, nombre, descripcion)
 Cargar los tipos de movimientos interes del xml
 */ 
 
-exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @XMLTipoMovimientoInteres
+exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @XMLTipoMovimientoInteres;
 
 insert @TipoMovInteresCrear(id, nombre, descripcion)
 		select id, nombre, descripcion
 		from openxml(@handle, '/dataset/TipoMovimientoInteres') with (id int, nombre nvarchar(50), descripcion nvarchar(70));
-    
 
+/*
+Cargar todas las fechas del xml en una tabla para recorrerlas
+*/ 
+
+exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @xmlOperaciones;
+
+insert @Fechas(fecha)
+		select fecha
+		from openxml(@handle, '/dataset/fechaOperacion') with (fecha date);
+    
 /* 
 While para mapear el XML por fechas ya agregar los movimientos a las tablas
 */
 
+set @fechaIncio = 1;
+select @fechaFinal = max(id) from @fechas;
+declare @fechaOperacion date;
+
+
+print '____________________________________' ;
 while @fechaIncio <= @fechaFinal
 	begin
-		delete ;
+		delete @ClientesCrear;
+
+		/*
+		Se guarda la fecha en @fechaOperacion para s'olo guardar los movimientosde una fecha por vez 
+		*/
+
+		select @fechaOperacion = F.fecha 
+			from @fechas F 
+			where @fechaIncio = F.id;
 
 		/*
 		Insercion de las cuentas en la tabla temporal
 		*/
+		--exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @xmlOperaciones;
 
-		insert @CuentasCrear (idCliente, tipoCuenta, fechaCreacion, saldo)
-		select idCliente, tipoCuenta, fechacreacion, sado
-		from openxml(@handle, 'dateset/Cuenta') with (idCliente nvarchar(50), tipoCuenta int, 
-		fechaCreacion date, saldo money);
+		--insert @ClientesCrear(nombre, docId, contrasenna)
+			--select nombre, valorDocId, contrasenna 
+			--from openxml(@handle, '/dataset/fechaOperacion/Cliente') with (nombre nvarchar(50), valorDocId nvarchar(50), contrasenna nvarchar(50))
+			--where @xmlOps.value('(/dataset/fechaOperacion/@fecha)[1]', 'date')  = @fechaOperacion;
+
 
 		--// select @minSec = min(sec); Qué es sec?
 		set @fechaIncio = @fechaIncio + 1;
