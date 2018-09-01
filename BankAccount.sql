@@ -35,7 +35,8 @@ create table Cliente
 	id int identity primary key not null,
 	nombre nvarchar(50) not null,
 	valorDocId nvarchar(10) not null,
-	contrasenna nvarchar(20) not null
+	contrasenna nvarchar(20) not null,
+	visible bit not null
 )
 
 create table TipoCuenta

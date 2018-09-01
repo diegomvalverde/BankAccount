@@ -10,11 +10,10 @@ go
 Variables para los xml
 */
 
---declare @xmlOperaciones xml
---set @xmlOperaciones = 
---(
---	select * from openrowset(bulk 'C:\Bases\Operaciones.xml', single_blob) as x
---);
+declare @xmlOps xml
+select @xmlOps = BulkColumn
+from openrowset(bulk 'C:\Bases\Operaciones.xml', single_blob) x
+
 
 declare @xmlAdmin xml
 set @xmlAdmin = 
@@ -185,7 +184,7 @@ insert @TipoMovInteresCrear(id, nombre, descripcion)
 Cargar todas las fechas del xml en una tabla para recorrerlas
 */ 
 
-exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @xmlOperaciones;
+exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @xmlOps;
 
 insert @Fechas(fecha)
 		select fecha
@@ -198,6 +197,12 @@ While para mapear el XML por fechas ya agregar los movimientos a las tablas
 set @fechaIncio = 1;
 select @fechaFinal = max(id) from @fechas;
 declare @fechaOperacion date;
+declare @low1 int;
+declare @hi1 int;
+declare @valorDocId nvarchar(50);
+declare @nombre nvarchar(50);
+declare @contrasenna nvarchar(50);
+
 
 
 print '____________________________________' ;
@@ -206,7 +211,7 @@ while @fechaIncio <= @fechaFinal
 		delete @ClientesCrear;
 
 		/*
-		Se guarda la fecha en @fechaOperacion para s'olo guardar los movimientosde una fecha por vez 
+		Se guarda la fecha en @fechaOperacion para s'olo guardar los movimientos de una fecha por vez 
 		*/
 
 		select @fechaOperacion = F.fecha 
@@ -216,15 +221,36 @@ while @fechaIncio <= @fechaFinal
 		/*
 		Insercion de las cuentas en la tabla temporal
 		*/
-		--exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @xmlOperaciones;
+		exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @xmlOps;
 
-		--insert @ClientesCrear(nombre, docId, contrasenna)
-			--select nombre, valorDocId, contrasenna 
-			--from openxml(@handle, '/dataset/fechaOperacion/Cliente') with (nombre nvarchar(50), valorDocId nvarchar(50), contrasenna nvarchar(50))
-			--where @xmlOps.value('(/dataset/fechaOperacion/@fecha)[1]', 'date')  = @fechaOperacion;
+		insert @ClientesCrear(nombre, docId, contrasenna)
+			select nombre, valorDocId, contrasenna 
+			from openxml(@handle, '/dataset/fechaOperacion/Cliente') with (nombre nvarchar(50), valorDocId nvarchar(50), contrasenna nvarchar(50))
+			where @xmlOps.value('(/dataset/fechaOperacion/@fecha)[1]', 'date')  = @fechaOperacion;
 
+		print @fechaOperacion
+
+		select @low1 = min(C.sec) from @ClientesCrear C;
+		select @hi1 = max(C.sec) from @ClientesCrear C;
+
+
+		/*
+		Insertar los clientes temporales en las tablas de la base de datos
+		*/
+
+		while @low1 <= @hi1
+			begin
+				select @valorDocId = C.docId, @nombre = C.nombre, @contrasenna = C.contrasenna 
+					from @ClientesCrear C
+					where C.sec = @low1;
+				insert into Cliente(nombre, valorDocId, contrasenna, visible)
+					values(@nombre, @valorDocId, @contrasenna, 1);
+
+				set @low1 = @low1 + 1;
+			end
 
 		--// select @minSec = min(sec); Qué es sec?
+		
 		set @fechaIncio = @fechaIncio + 1;
 	end;
 
