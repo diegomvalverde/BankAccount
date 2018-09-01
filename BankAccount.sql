@@ -41,7 +41,7 @@ create table Cliente
 
 create table TipoCuenta
 (
-	id int identity primary key not null,
+	id int primary key not null,
 	nombre nvarchar(50) not null,
 	tasaInteres float not null,
 	saldoMin money not null,
@@ -67,12 +67,13 @@ create table Cuenta
 create table TipoMovimiento
 (
 	id int primary key not null,
-	nombre nvarchar(20) 
+	nombre nvarchar(20) not null,
+	descripcion nvarchar(100) not null
 )
 
 create table Movimiento
 (
-	id int identity primary key not null,
+	id int identity(1,1) primary key not null,
 	idMovimiento int constraint FKMovimiento_Cuenta references Cuenta(id) not null,
 	idTipoMovimiento int constraint FKMovimiento_TipoMovimiento references TipoMovimiento(id) not null,
 	fecha date not null,
@@ -98,16 +99,17 @@ create table EstadoCuenta
 
 create table MovimientoInteres
 (
-	id int identity primary key not null,
+	id int primary key not null,
 	fecha date not null,
 	saldo money not null,
 	interesDiario float not null
 )
 
-create table TipoMovInteres
+create table TipoMovimientoInteres
 (
 	id int identity primary key not null,
 	nombre nvarchar(50) not null,
+	descripcion nvarchar(50) not null
 )
 
 create table Evento
@@ -122,8 +124,9 @@ create table Evento
 
 create table TipoEvento
 (
-	id int identity primary key not null,
+	id int primary key not null,
 	nombre nvarchar(50) not null,
+	descipcion nvarchar(50) not null
 )
 
 

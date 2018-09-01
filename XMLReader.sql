@@ -68,11 +68,10 @@ declare @ClientesCrear table
 
 declare @CuentasCrear table
 (
-	sec int identity(1,1),
+	id int identity(1,1),
 	idCliente nvarchar(50),
 	tipoCuenta int,
-	fechaCreacion date,
-	saldo money
+	codigoCuenta nvarchar(100)
 );
 
 declare @AdminsCrear table
@@ -202,10 +201,101 @@ declare @hi1 int;
 declare @valorDocId nvarchar(50);
 declare @nombre nvarchar(50);
 declare @contrasenna nvarchar(50);
-
+declare @idCuenta nvarchar(50);
+declare @tipoCuenta int;
 
 
 print '____________________________________' ;
+
+/*
+Agregar los tipos de movimientos interes temporales a la tabla de la base de datos
+*/ 
+
+while @low1 <= @hi1
+	begin
+		insert into TipoMovInteres(id, nombre)
+			select T.id, T.nombre 
+			from @TipoMovInteresCrear T
+			where T.id = @low1;
+
+		set @low1 = @low1 + 1;
+	end
+
+/*
+Agregar los tipos de cuanta a as tablas de la base de datos
+*/
+
+select @low1 = min(T.id) from @TipoMovInteresCrear T;
+select @hi1 = max(T.id) from @TipoMovInteresCrear T;
+
+while @low1 <= @hi1
+	begin
+		insert into TipoCuenta(id, cantMaxATM, cantMaxMAnual, cargoServicio, mulaSaldoNegativo, multaCantmaxATM, 
+			multaCantMaxManual, multaSaldoMin, nombre, saldoMin, tasaInteres)
+			select T.id, T.cantMaxATM, T.cantMaxMAnual, T.cargoServicio, T.mulaSaldoNegativo, T.multaCantmaxATM,
+					T.multaCantMaxManual, T.multaSaldoMin, T.nombre, T.saldoMin, T.tasaInteres 
+			from @TiposCuentaCrear T
+			where T.id = @low1;
+
+		set @low1 = @low1 + 1;
+	end
+
+/*
+Guardar los Administradores de la tabla temporal en la tabla de la base de datos.
+*/ 
+
+select @low1 = min(A.sec) from @AdminsCrear A;
+select @hi1 = max(A.sec) from @AdminsCrear A;
+
+while @low1 <= @hi1
+	begin
+		insert into Administrador(nombre, valorDocId, contrasenna)
+			select A.nombre, A.idAdmin, A.contrasenna
+			from @AdminsCrear A
+			where A.sec = @low1;
+
+		set @low1 = @low1 + 1;
+	end
+
+
+/*
+Cargar los tipos de evento de la tabla temporal en la tabla de la base de datos.
+*/ 
+
+select @low1 = min(T.id) from @TipoEventoCrear T;
+select @hi1 = max(T.id) from @TipoEventoCrear T;
+
+while @low1 <= @hi1
+	begin
+		insert into TipoEvento(id, nombre, descripcion)
+			select T.id, T.nombre, T.descripcion
+			from @TipoEventoCrear T
+			where T.id = @low1;
+
+		set @low1 = @low1 + 1;
+	end
+
+/*
+Cargar los tipos de movimientos de la tabla temporal en la tabla de la base de datos.
+*/ 
+
+select @low1 = min(T.id) from @TipoMovimientoCrear T;
+select @hi1 = max(T.id) from @TipoMovimientoCrear T;
+
+while @low1 <= @hi1
+	begin
+		insert into TipoMovimiento(id, nombre, descripcion)
+			select T.id, T.nombre, T.descripcion
+			from @TipoMovimientoCrear T
+			where T.id = @low1;
+
+		set @low1 = @low1 + 1;
+	end
+
+/*
+Recorrido del xml de operaciones por fecha para crear clientes, movimientos y cuentas.
+*/
+
 while @fechaIncio <= @fechaFinal
 	begin
 		delete @ClientesCrear;
@@ -219,16 +309,14 @@ while @fechaIncio <= @fechaFinal
 			where @fechaIncio = F.id;
 
 		/*
-		Insercion de las cuentas en la tabla temporal
+		Insercion de las cuentas en la tabla temporal de clientes
 		*/
 		exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @xmlOps;
 
 		insert @ClientesCrear(nombre, docId, contrasenna)
 			select nombre, valorDocId, contrasenna 
-			from openxml(@handle, '/dataset/fechaOperacion/Cliente') with (nombre nvarchar(50), valorDocId nvarchar(50), contrasenna nvarchar(50))
+			from openxml(@handle, '/dataset/fechaOperacion/Cliente') with (nombre nvarchar(50), valorDocId nvarchar(50), contrasenna nvarchar(100))
 			where @xmlOps.value('(/dataset/fechaOperacion/@fecha)[1]', 'date')  = @fechaOperacion;
-
-		print @fechaOperacion
 
 		select @low1 = min(C.sec) from @ClientesCrear C;
 		select @hi1 = max(C.sec) from @ClientesCrear C;
@@ -249,8 +337,37 @@ while @fechaIncio <= @fechaFinal
 				set @low1 = @low1 + 1;
 			end
 
-		--// select @minSec = min(sec); Qué es sec?
-		
+		/*
+		Insercion de las cuantas en las tablas temporales de cuentas.
+		*/
+		insert @CuentasCrear(idCliente, tipoCuenta, codigoCuenta)
+			select docIdCliente, tipoCuenta, codigoCuenta
+			from openxml(@handle, '/dataset/fechaOperacion/Cuenta') with (docIdCliente nvarchar(50), tipoCuenta int, codigoCuenta nvarchar(50))
+			where @xmlOps.value('(/dataset/fechaOperacion/@fecha)[1]', 'date')  = @fechaOperacion;
+
+		select @low1 = min(C.id) from @CuentasCrear C;
+		select @hi1 = max(C.id) from @CuentasCrear C;
+
+
+		/*
+		Insertar las cuentas temporales en las tablas de la base de datos
+		*/
+
+		while @low1 <= @hi1
+			begin
+				select @valorDocId = C.idCliente, @tipoCuenta = C.tipoCuenta, @idCuenta = C.codigoCuenta 
+					from @CuentasCrear C
+					where C.id = @low1;
+
+				insert into Cuenta(fechaCreacion, idCliente, idTipoCuenta, interesesAcumulados, saldo)
+					select @fechaOperacion, C.id, T.id, 0.00, 0.00
+					from Cliente C, TipoCuenta T
+					where C.valorDocId = @valorDocId and T.id = @tipoCuenta;
+
+				set @low1 = @low1 + 1;
+			end
+
+
 		set @fechaIncio = @fechaIncio + 1;
 	end;
 
