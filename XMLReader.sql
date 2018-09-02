@@ -11,8 +11,10 @@ Variables para los xml
 */
 
 declare @xmlOps xml
-select @xmlOps = BulkColumn
-from openrowset(bulk 'C:\Bases\Operaciones.xml', single_blob) x
+set @xmlOps = 
+(
+	select * from openrowset(bulk 'C:\Bases\Operaciones.xml', single_blob) as x
+);
 
 
 declare @xmlAdmin xml
@@ -217,18 +219,21 @@ declare @nombre nvarchar(50);
 declare @contrasenna nvarchar(50);
 declare @idCuenta nvarchar(50);
 declare @tipoCuenta int;
-
-
-print '____________________________________' ;
+declare @tiempo time;
+declare @monto money;
+declare @tipoMovimiento int;
 
 /*
 Agregar los tipos de movimientos interes temporales a la tabla de la base de datos
 */ 
 
+select @low1 = min(T.sec) from @TipoMovInteresCrear T;
+select @hi1 = max(T.sec) from @TiposCuentaCrear T;
+
 while @low1 <= @hi1
 	begin
-		insert into TipoMovInteres(id, nombre)
-			select T.id, T.nombre 
+		insert into TipoMovInteres(id, nombre, descripcion)
+			select T.id, T.nombre, T.descripcion
 			from @TipoMovInteresCrear T
 			where T.id = @low1;
 
@@ -239,8 +244,8 @@ while @low1 <= @hi1
 Agregar los tipos de cuanta a as tablas de la base de datos
 */
 
-select @low1 = min(T.id) from @TipoMovInteresCrear T;
-select @hi1 = max(T.id) from @TipoMovInteresCrear T;
+select @low1 = min(T.sec) from @TiposCuentaCrear T;
+select @hi1 = max(T.sec) from @TiposCuentaCrear T;
 
 while @low1 <= @hi1
 	begin
@@ -276,8 +281,8 @@ while @low1 <= @hi1
 Cargar los tipos de evento de la tabla temporal en la tabla de la base de datos.
 */ 
 
-select @low1 = min(T.id) from @TipoEventoCrear T;
-select @hi1 = max(T.id) from @TipoEventoCrear T;
+select @low1 = min(T.sec) from @TipoEventoCrear T;
+select @hi1 = max(T.sec) from @TipoEventoCrear T;
 
 while @low1 <= @hi1
 	begin
@@ -293,8 +298,8 @@ while @low1 <= @hi1
 Cargar los tipos de movimientos de la tabla temporal en la tabla de la base de datos.
 */ 
 
-select @low1 = min(T.id) from @TipoMovimientoCrear T;
-select @hi1 = max(T.id) from @TipoMovimientoCrear T;
+select @low1 = min(T.sec) from @TipoMovimientoCrear T;
+select @hi1 = max(T.sec) from @TipoMovimientoCrear T;
 
 while @low1 <= @hi1
 	begin
@@ -347,6 +352,7 @@ while @fechaIncio <= @fechaFinal
 				select @valorDocId = C.docId, @nombre = C.nombre, @contrasenna = C.contrasenna 
 					from @ClientesCrear C
 					where C.sec = @low1;
+
 				insert into Cliente(nombre, valorDocId, contrasenna, visible)
 					values(@nombre, @valorDocId, @contrasenna, 1);
 
@@ -376,9 +382,9 @@ while @fechaIncio <= @fechaFinal
 					where C.id = @low1;
 
 				insert into Cuenta(fechaCreacion, idCliente, idTipoCuenta, interesesAcumulados, saldo, codigoCuenta)
-					select @fechaOperacion, C.id, T.id, 0.00, 0.00, @idCuenta
-					from Cliente C, TipoCuenta T
-					where C.valorDocId = @valorDocId and T.id = @tipoCuenta;
+					select @fechaOperacion, C.id, F.id, 0.00, 0.00, @idCuenta
+					from Cliente C, TipoCuenta F
+					where C.valorDocId = @valorDocId and F.id = @tipoCuenta;
 
 				set @low1 = @low1 + 1;
 			end
@@ -387,6 +393,7 @@ while @fechaIncio <= @fechaFinal
 		/*
 		Insercion de los movimientos en la tabla temporal de movimientos.
 		*/
+
 		insert @movimientosCrear(monto, tipoMovimiento, codigoCuenta_Movimiento, descripcion)
 			select monto, tipoMovimiento, codigoCuenta_Movimiento, descripcion
 			from openxml(@handle, '/dataset/fechaOperacion/Movimiento') with (monto money, tipoMovimiento int, codigoCuenta_Movimiento nvarchar(100),
@@ -404,17 +411,32 @@ while @fechaIncio <= @fechaFinal
 		while @low1 <= @hi1
 			begin
 
-				declare @tiempo time;
 				select @tiempo = convert(varchar(10), GETDATE(), 108)
+
+				select @tipoCuenta= C.id, @tipoMovimiento = M.tipoMovimiento
+					from Cuenta C, @movimientosCrear M
+					where C.codigoCuenta = M.codigoCuenta_Movimiento and M.sec = @low1;
 
 				insert into Movimiento(fecha, idMovimiento, idTipoMovimiento, invisible, postIp, postTime, monto)
 					select @fechaOperacion, C.id, M.tipoMovimiento, 0, 'Unknown', @tiempo, M.monto
 					from Cuenta C, @movimientosCrear M
 					where C.codigoCuenta = M.codigoCuenta_Movimiento and M.sec = @low1;
 
+				select @monto = M.monto	
+					from @movimientosCrear M
+					where M.sec = @low1;
+				
+				if(@tipoMovimiento = 3 or @tipoMovimiento = 4 or @tipoMovimiento = 5 or @tipoMovimiento = 7 or
+					@tipoMovimiento = 8 or @tipoMovimiento = 9 or @tipoMovimiento = 10 or @tipoMovimiento = 11)
+					begin
+						set @monto = @monto * -1;
+					end;
+				update Cuenta
+					set saldo = saldo + @monto
+					where idCliente = @tipoCuenta;
+
 				set @low1 = @low1 + 1;
 			end
-
 
 		set @fechaIncio = @fechaIncio + 1;
 	end;
