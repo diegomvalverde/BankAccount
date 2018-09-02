@@ -94,29 +94,43 @@ declare @TiposCuentaCrear table
 	multaCantmaxATM money,
 	mulaSaldoNegativo money,
 	cargoServicio money,
-	id int
+	id int,
+	sec int identity(1,1)
 );
 
 declare @TipoEventoCrear table
 (
 	descripcion nvarchar(70),
 	nombre nvarchar(50),
-	id int
+	id int,
+	sec int identity(1,1)
 );
 
 declare @TipoMovimientoCrear table
 (
 	nombre nvarchar(50),
 	id int, 
-	descripcion nvarchar(200)
+	descripcion nvarchar(200),
+	sec int identity(1,1)
 );
 
 declare @TipoMovInteresCrear table
 (
 	nombre nvarchar(50),
 	descripcion nvarchar(70),
-	id int
+	id int,
+	sec int identity(1,1)
 );
+
+declare @movimientosCrear table
+(
+	id int,
+	monto money,
+	tipoMovimiento int,
+	codigoCuenta_Movimiento nvarchar(100),
+	descripcion nvarchar(200),
+	sec int identity(1,1)
+)
 
 declare @Fechas table
 (
@@ -299,6 +313,8 @@ Recorrido del xml de operaciones por fecha para crear clientes, movimientos y cu
 while @fechaIncio <= @fechaFinal
 	begin
 		delete @ClientesCrear;
+		delete @CuentasCrear;
+		delete @movimientosCrear;
 
 		/*
 		Se guarda la fecha en @fechaOperacion para s'olo guardar los movimientos de una fecha por vez 
@@ -359,10 +375,42 @@ while @fechaIncio <= @fechaFinal
 					from @CuentasCrear C
 					where C.id = @low1;
 
-				insert into Cuenta(fechaCreacion, idCliente, idTipoCuenta, interesesAcumulados, saldo)
-					select @fechaOperacion, C.id, T.id, 0.00, 0.00
+				insert into Cuenta(fechaCreacion, idCliente, idTipoCuenta, interesesAcumulados, saldo, codigoCuenta)
+					select @fechaOperacion, C.id, T.id, 0.00, 0.00, @idCuenta
 					from Cliente C, TipoCuenta T
 					where C.valorDocId = @valorDocId and T.id = @tipoCuenta;
+
+				set @low1 = @low1 + 1;
+			end
+
+
+		/*
+		Insercion de los movimientos en la tabla temporal de movimientos.
+		*/
+		insert @movimientosCrear(monto, tipoMovimiento, codigoCuenta_Movimiento, descripcion)
+			select monto, tipoMovimiento, codigoCuenta_Movimiento, descripcion
+			from openxml(@handle, '/dataset/fechaOperacion/Movimiento') with (monto money, tipoMovimiento int, codigoCuenta_Movimiento nvarchar(100),
+																		 descripcion nvarchar(200))
+			where @xmlOps.value('(/dataset/fechaOperacion/@fecha)[1]', 'date')  = @fechaOperacion;
+
+		select @low1 = min(M.sec) from @movimientosCrear M;
+		select @hi1 = max(M.sec) from @movimientosCrear M;
+
+
+		/*
+		Insertar las cuentas temporales en las tablas de la base de datos
+		*/
+
+		while @low1 <= @hi1
+			begin
+
+				declare @tiempo time;
+				select @tiempo = convert(varchar(10), GETDATE(), 108)
+
+				insert into Movimiento(fecha, idMovimiento, idTipoMovimiento, invisible, postIp, postTime, monto)
+					select @fechaOperacion, C.id, M.tipoMovimiento, 0, 'Unknown', @tiempo, M.monto
+					from Cuenta C, @movimientosCrear M
+					where C.codigoCuenta = M.codigoCuenta_Movimiento and M.sec = @low1;
 
 				set @low1 = @low1 + 1;
 			end

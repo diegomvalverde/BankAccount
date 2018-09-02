@@ -61,7 +61,8 @@ create table Cuenta
 	idTipoCuenta int constraint FKCuenta_TipoCuenta references TipoCuenta(id) not null,
 	saldo money not null,
 	fechaCreacion date not null,
-	interesesAcumulados money not null
+	interesesAcumulados money not null,
+	codigoCuenta nvarchar(50) not null
 )
 
 create table TipoMovimiento
@@ -79,7 +80,8 @@ create table Movimiento
 	fecha date not null,
 	postIp nvarchar(216) not null,
 	postTime time not null,
-	invisible bit not null
+	invisible bit not null,
+	monto money not null
 )
 
 create table EstadoCuenta
