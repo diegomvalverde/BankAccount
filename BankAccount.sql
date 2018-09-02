@@ -67,8 +67,8 @@ create table Cuenta
 create table TipoMovimiento
 (
 	id int primary key not null,
-	nombre nvarchar(20) not null,
-	descripcion nvarchar(100) not null
+	nombre nvarchar(50) not null,
+	descripcion nvarchar(200) not null
 )
 
 create table Movimiento
@@ -126,7 +126,7 @@ create table TipoEvento
 (
 	id int primary key not null,
 	nombre nvarchar(50) not null,
-	descipcion nvarchar(50) not null
+	descripcion nvarchar(50) not null
 )
 
 

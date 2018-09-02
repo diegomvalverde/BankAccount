@@ -106,7 +106,7 @@ declare @TipoEventoCrear table
 
 declare @TipoMovimientoCrear table
 (
-	nombre nvarchar(100),
+	nombre nvarchar(50),
 	id int, 
 	descripcion nvarchar(200)
 );
@@ -167,7 +167,7 @@ exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @xmlTipoMovimient
 
 insert @TipoMovimientoCrear(id, nombre, descripcion)
 		select id, nombre, descripcion
-		from openxml(@handle, '/dataset/TipoMovimiento') with (id int, nombre nvarchar(100), descripcion nvarchar(200));
+		from openxml(@handle, '/dataset/TipoMovimiento') with (id int, nombre nvarchar(50), descripcion nvarchar(200));
 
 /*
 Cargar los tipos de movimientos interes del xml
