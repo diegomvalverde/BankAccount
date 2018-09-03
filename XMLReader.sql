@@ -5,6 +5,8 @@ se leen de un xml.
 use BankAccount
 go
 
+set dateformat dmy;  
+go  
 
 /*
 Variables para los xml
@@ -13,7 +15,7 @@ Variables para los xml
 declare @xmlOps xml
 set @xmlOps = 
 (
-	select * from openrowset(bulk 'C:\Bases\Operaciones.xml', single_blob) as x
+	select * from openrowset(bulk 'C:\Bases\Operaciones_v2.xml', single_blob) as x
 );
 
 
@@ -140,6 +142,11 @@ declare @Fechas table
 	fecha date 
 );
 
+
+--select convert (varchar, F.fecha, 105) from @Fechas F
+
+
+
 /*
 Cargar los administradores del xml
 */ 
@@ -204,14 +211,15 @@ exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @xmlOps;
 insert @Fechas(fecha)
 		select fecha
 		from openxml(@handle, '/dataset/fechaOperacion') with (fecha date);
-    
-/* 
-While para mapear el XML por fechas ya agregar los movimientos a las tablas
-*/
+
+select * from @Fechas;
 
 set @fechaIncio = 1;
-select @fechaFinal = max(id) from @fechas;
+select @fechaFinal = max(F.id) 
+	from @fechas F;
+print @fechaFinal;
 declare @fechaOperacion date;
+declare @fechaEstadoCuenta date;
 declare @low1 int;
 declare @hi1 int;
 declare @valorDocId nvarchar(50);
@@ -315,6 +323,9 @@ while @low1 <= @hi1
 Recorrido del xml de operaciones por fecha para crear clientes, movimientos y cuentas.
 */
 
+set @fechaIncio = 0;
+select @fechaFinal = max(F.id)
+	from @Fechas F;
 while @fechaIncio <= @fechaFinal
 	begin
 		delete @ClientesCrear;
@@ -322,13 +333,15 @@ while @fechaIncio <= @fechaFinal
 		delete @movimientosCrear;
 
 		/*
-		Se guarda la fecha en @fechaOperacion para s'olo guardar los movimientos de una fecha por vez 
+		Se guarda la fecha en @fechaOperacion para sólo guardar los movimientos de una fecha por vez 
 		*/
+		set @fechaIncio = @fechaIncio + 1;
 
-		select @fechaOperacion = F.fecha 
-			from @fechas F 
-			where @fechaIncio = F.id;
+		select @fechaOperacion = F.fecha
+			from @Fechas F
+			where F.id = @fechaIncio;
 
+		print @fechaOperacion;
 		/*
 		Insercion de las cuentas en la tabla temporal de clientes
 		*/
@@ -337,9 +350,9 @@ while @fechaIncio <= @fechaFinal
 		insert @ClientesCrear(nombre, docId, contrasenna)
 			select nombre, valorDocId, contrasenna 
 			from openxml(@handle, '/dataset/fechaOperacion/Cliente') with (nombre nvarchar(50), valorDocId nvarchar(50), contrasenna nvarchar(100))
-			where @xmlOps.value('(/dataset/fechaOperacion/@fecha)[1]', 'date')  = @fechaOperacion;
+			where @xmlOps.value('(/dataset/fechaOperacion/@fecha)[1]', 'date') = @fechaOperacion;
 
-		select @low1 = min(C.sec) from @ClientesCrear C;
+		select @low1 = 1;
 		select @hi1 = max(C.sec) from @ClientesCrear C;
 
 
@@ -367,7 +380,7 @@ while @fechaIncio <= @fechaFinal
 			from openxml(@handle, '/dataset/fechaOperacion/Cuenta') with (docIdCliente nvarchar(50), tipoCuenta int, codigoCuenta nvarchar(50))
 			where @xmlOps.value('(/dataset/fechaOperacion/@fecha)[1]', 'date')  = @fechaOperacion;
 
-		select @low1 = min(C.id) from @CuentasCrear C;
+		select @low1 = 1;
 		select @hi1 = max(C.id) from @CuentasCrear C;
 
 
@@ -386,6 +399,11 @@ while @fechaIncio <= @fechaFinal
 					from Cliente C, TipoCuenta F
 					where C.valorDocId = @valorDocId and F.id = @tipoCuenta;
 
+				insert into EstadoCuenta(idCuenta, nombre, saldoInicial, saldoFinal, fechaInicial, fechaFinal, cantmMaxATM, cantMaxManual, enProceso, saldoMinimo)
+					select C.idCliente, 'Estado de cuenta del: ', C.saldo, C.saldo, @fechaOperacion, @fechaOperacion, 0, 0, 1, C.saldo
+					from Cuenta C
+					where C.id = @low1;
+
 				set @low1 = @low1 + 1;
 			end
 
@@ -400,12 +418,12 @@ while @fechaIncio <= @fechaFinal
 																		 descripcion nvarchar(200))
 			where @xmlOps.value('(/dataset/fechaOperacion/@fecha)[1]', 'date')  = @fechaOperacion;
 
-		select @low1 = min(M.sec) from @movimientosCrear M;
+		select @low1 = 1;
 		select @hi1 = max(M.sec) from @movimientosCrear M;
 
 
 		/*
-		Insertar las cuentas temporales en las tablas de la base de datos
+		Insertar los movimientos temporales en las tablas de la base de datos
 		*/
 
 		while @low1 <= @hi1
@@ -413,7 +431,7 @@ while @fechaIncio <= @fechaFinal
 
 				select @tiempo = convert(varchar(10), GETDATE(), 108)
 
-				select @tipoCuenta= C.id, @tipoMovimiento = M.tipoMovimiento
+				select @tipoCuenta = C.id, @tipoMovimiento = M.tipoMovimiento
 					from Cuenta C, @movimientosCrear M
 					where C.codigoCuenta = M.codigoCuenta_Movimiento and M.sec = @low1;
 
@@ -431,6 +449,7 @@ while @fechaIncio <= @fechaFinal
 					begin
 						set @monto = @monto * -1;
 					end;
+
 				update Cuenta
 					set saldo = saldo + @monto
 					where idCliente = @tipoCuenta;
@@ -438,9 +457,55 @@ while @fechaIncio <= @fechaFinal
 				set @low1 = @low1 + 1;
 			end
 
-		set @fechaIncio = @fechaIncio + 1;
-	end;
+		
+		/*
+		Calcular los intereses diarios (saldo * tasaInteres / 365)
+		*/
 
+		set @low1 = 1;
+		select @hi1 = max(C.id) 
+			from Cuenta C;
 
-	use master
-	go
+		while @low1 <= @hi1
+			begin
+				select @monto = C.saldo * T.tasaInteres / 365
+					from Cuenta C, TipoCuenta T
+					where C.id = @low1 and T.id = C.idTipoCuenta;
+
+				update Cuenta 
+					set interesesAcumulados = interesesAcumulados + @monto
+					where id = @low1;
+				set @low1 = @low1 + 1;
+			end;
+
+		
+		/*
+		Cerrar y (o) abrir estados de cuenta
+		*/
+		set @low1 = 1;
+		select @hi1 = max(E.id)
+			from EstadoCuenta E;
+
+		while @low1 <= @hi1
+			begin
+				select @fechaEstadoCuenta = dateadd(month, -1 , @fechaOperacion);
+
+				select @fechaEstadoCuenta = E.fechaInicial, @idCuenta = E.idCuenta, @monto = C.interesesAcumulados
+					from EstadoCuenta E, Cuenta C
+					where E.id = @low1 and C.id = E.idCuenta;
+				
+				update Cuenta
+					set saldo = saldo + @monto
+					where id = @idCuenta;
+
+				update EstadoCuenta
+					set fechaFinal = @fechaOperacion, enProceso = 0
+					where id = @low1 and fechaInicial <= @fechaEstadoCuenta;
+
+				set @low1 = @low1 + 1;
+			end 
+		
+	end; -- Fin del while grande
+	
+use master
+go

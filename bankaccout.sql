@@ -98,6 +98,7 @@ create table EstadoCuenta
 	saldoMinimo money not null,
 	cantMaxManual int not null,
 	cantmMaxATM int not null,
+	enProceso bit not null
 )
 
 
