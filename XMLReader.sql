@@ -472,6 +472,15 @@ while @fechaIncio <= @fechaFinal
 							where idCliente = @idCliente;
 					end;
 
+				-- Cambia el saldo minimo del estado de cuenta
+				select @monto = C.saldo
+					from Cuenta C
+					where idCliente = idCliente;
+
+				update EstadoCuenta 
+					set saldoMinimo = @monto
+					where @monto < saldoMinimo and idCuenta = @idCuenta;
+
 				set @low1 = @low1 + 1;
 			end
 
@@ -503,16 +512,17 @@ while @fechaIncio <= @fechaFinal
 		*/
 		set @low1 = 1;
 		select @hi1 = max(E.id)
-			from EstadoCuenta E;
+			from EstadoCuenta E
+			where E.enProceso = 1;
 
 		while @low1 <= @hi1
 			begin
 
-				select @fechaOperacion = dateadd(month, -1 , @fechaOperacion);
-
 				select @fechaEstadoCuenta = E.fechaInicial, @idCuenta = E.idCuenta
 					from EstadoCuenta E
-					where E.id = @low1;
+					where E.id = @low1 and E.enProceso = 1;
+
+				select @fechaEstadoCuenta = dateadd(month, 1 , @fechaEstadoCuenta);
 
 				if (@fechaOperacion >= @fechaEstadoCuenta)
 				begin
@@ -522,11 +532,16 @@ while @fechaIncio <= @fechaFinal
 
 					select @monto = C.saldo
 						from Cuenta C
-						where id = @idCuenta;
+						where C.id = @idCuenta;
 					
 					update EstadoCuenta
 						set fechaFinal = @fechaOperacion, enProceso = 0, saldoFinal = @monto
 						where id = @low1;
+
+					insert into EstadoCuenta(idCuenta, nombre, saldoInicial, saldoFinal, fechaInicial, fechaFinal, cantmMaxATM, cantMaxManual, enProceso, saldoMinimo)
+						select C.idCliente, 'Estado de cuenta', C.saldo, 0, @fechaOperacion, @fechaOperacion, 0, 0, 1, C.saldo
+						from Cuenta C
+						where C.id = @idCuenta;
 				end;
 
 				set @low1 = @low1 + 1;
