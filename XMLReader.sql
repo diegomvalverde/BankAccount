@@ -17,7 +17,7 @@ Variables para los xml
 declare @xmlOps xml
 set @xmlOps = 
 (
-	select * from openrowset(bulk 'C:\Bases\Operaciones_v2.xml', single_blob) as x
+	select * from openrowset(bulk 'C:\Bases\Operaciones.xml', single_blob) as x
 );
 
 
@@ -71,10 +71,13 @@ declare @idCuenta nvarchar(50);
 declare @tipoCuenta int;
 declare @monto money;
 declare @tipoMovimiento int;
+declare @idCliente int;
 
 --Variables del xml
 declare @handle int;  
 declare @PrepareXmlStatus int;  
+declare @ops xml;
+
 
 -- Iterar el xml por fechas
 declare @fechaIncio int;
@@ -90,7 +93,8 @@ declare @ClientesCrear table
 	sec int identity(1,1),
 	docId nvarchar(10),
 	nombre nvarchar(50),
-	contrasenna nvarchar(50)
+	contrasenna nvarchar(50),
+	fecha date
 );
 
 
@@ -99,7 +103,8 @@ declare @CuentasCrear table
 	id int identity(1,1),
 	idCliente nvarchar(50),
 	tipoCuenta int,
-	codigoCuenta nvarchar(100)
+	codigoCuenta nvarchar(100),
+	fecha date
 );
 
 declare @AdminsCrear table
@@ -157,7 +162,8 @@ declare @movimientosCrear table
 	tipoMovimiento int,
 	codigoCuenta_Movimiento nvarchar(100),
 	descripcion nvarchar(200),
-	sec int identity(1,1)
+	sec int identity(1,1),
+	fecha date
 )
 
 declare @Fechas table
@@ -230,9 +236,8 @@ Cargar todas las fechas del xml en una tabla para recorrerlas
 exec @PrepareXmlStatus= sp_xml_preparedocument @handle output, @xmlOps;
 
 insert @Fechas(fecha)
-		select fecha
-		from openxml(@handle, '/dataset/fechaOperacion') with (fecha date);
-
+	select y.fecha.value('(@fecha)', 'date')
+		from @xmlOps.nodes('/dataset/fechaOperacion') as y(fecha);
 
 /*
 Agregar los tipos de movimientos interes temporales a la tabla de la base de datos
@@ -252,7 +257,7 @@ while @low1 <= @hi1
 	end
 
 /*
-Agregar los tipos de cuanta a as tablas de la base de datos
+Agregar los tipos de cuanta a las tablas de la base de datos
 */
 
 select @low1 = min(T.sec) from @TiposCuentaCrear T;
@@ -309,7 +314,7 @@ while @low1 <= @hi1
 Cargar los tipos de movimientos de la tabla temporal en la tabla de la base de datos.
 */ 
 
-select @low1 = min(T.sec) from @TipoMovimientoCrear T;
+set @low1 = 1;
 select @hi1 = max(T.sec) from @TipoMovimientoCrear T;
 
 while @low1 <= @hi1
@@ -320,221 +325,223 @@ while @low1 <= @hi1
 			where T.id = @low1;
 
 		set @low1 = @low1 + 1;
-	end
+	end;
 
 /*
-Recorrido del xml de operaciones por fecha para crear clientes, movimientos y cuentas.
+Se leen los datos de los clientes del xml, sólo los correspondientes a una fecha y se guardan en la tabla temporal de clientes
+Insercion de los clientes en la tabla temporal de clientes para posteriormente agregarlas a la tabla Clientes de la BD.
+*/
+	
+insert @ClientesCrear(nombre, docId, contrasenna, fecha)
+	select y.fecha.value('@nombre', 'nvarchar(50)'),
+		y.fecha.value('@valorDocId', 'nvarchar(50)'),					
+		y.fecha.value('@contrasenna', 'nvarchar(50)'),
+		y.fecha.value('(../@fecha)', 'date')
+		from @xmlOps.nodes('/dataset/fechaOperacion/Cliente') as y(fecha);
+/*
+Se agregan los clientes (uno por uno) guardados en la tabla temporal de clientes en la tabla Clientes de la BD.
 */
 
-set @fechaIncio = 0;
-select @fechaFinal = max(F.id)
-	from @Fechas F;
-exec sp_xml_removedocument @handle
+set @low1 = 1;
+select @hi1 = max(C.sec)
+	from @clientesCrear C;
 
-while @fechaIncio < @fechaFinal
+while @low1 <= @hi1
 	begin
 
-		/*
-		Se guarda la fecha en @fechaOperacion para sólo guardar los movimientos de una fecha por vez 
-		*/
+		insert into Cliente(nombre, valorDocId, contrasenna, visible)
+			select C.nombre, C.docId, C.contrasenna, 1
+			from @ClientesCrear C
+			where @low1 = C.sec;
+
+		set @low1 = @low1 + 1;
+	end;
+
+
+/*
+Se leen las cuentas por fecha y se agregan a la tabla temporal de cuentas para posteriormente ser agregadas a la 
+tabla clientes de la BD.
+*/
+
+insert @CuentasCrear(idCliente, tipoCuenta, codigoCuenta, fecha)
+	select y.id.value('@docIdCliente', 'nvarchar(50)'),
+			y.id.value('@tipoCuenta', 'int'),					
+			y.id.value('@codigoCuenta', 'nvarchar(50)'),
+			y.id.value('(../@fecha)', 'date')
+			from @xmlOps.nodes('/dataset/fechaOperacion/Cuenta') as Y(ID)
+
+/*
+Se agregan todas las cuentas de la tabla temporal de cuentas (una por una) a la tabla Cuentas de la BD y se abre un estado
+de cuenta para estas nuevas cuentas.
+*/
+
+select @low1 = 1;
+select @hi1 = max(C.id) 
+	from @CuentasCrear C;
+
+while @low1 <= @hi1
+	begin
+		insert into Cuenta(fechaCreacion, idCliente, idTipoCuenta, interesesAcumulados, saldo, codigoCuenta)
+			select CC.fecha, C.id, CC.tipoCuenta, 0, 0, CC.codigoCuenta
+			from @CuentasCrear CC, Cliente C
+			where C.id = @low1 and CC.idCliente = C.valorDocId;
+
+		insert into EstadoCuenta(idCuenta, nombre, saldoInicial, saldoFinal, fechaInicial, fechaFinal, cantmMaxATM, cantMaxManual, enProceso, saldoMinimo)
+			select C.idCliente, 'Estado de cuenta', C.saldo, C.saldo, C.fechaCreacion, C.fechaCreacion, 0, 0, 1, C.saldo
+			from Cuenta C
+			where C.id = @low1;
+
+		set @low1 = @low1 + 1;
+	end;
+
+
+/*
+Se leen los movimientos del xml por fechas y se guardan en la tabla temporal de los movimientos para posteriormente ser 
+agregados a la BD.
+*/
+
+insert @movimientosCrear(monto, tipoMovimiento, descripcion, codigoCuenta_Movimiento, fecha)
+	select y.id.value('@monto', 'money'),
+			y.id.value('@tipoMovimiento', 'int'),
+			y.id.value('@descripcion', 'nvarchar(50)'),				
+			y.id.value('@codigoCuenta_Movimiento', 'nvarchar(50)'),
+			y.id.value('(../@fecha)', 'date')
+			from @xmlOps.nodes('/dataset/fechaOperacion/Movimiento') as Y(ID)
+
+set @fechaIncio = 1;
+select @fechaFinal = max(F.id)
+	from @Fechas F;
+
+
+/*
+While grande para recorrer por fechas.
+*/
+
+while @fechaIncio <= @fechaFinal
+	begin
+
+		delete @ClientesCrear;
+		delete @CuentasCrear;
+		--delete @movimientosCrear;
 
 		select @fechaOperacion = F.fecha
 			from @Fechas F
 			where F.id = @fechaIncio;
 
-		select @fechaOperacionString = cast(day(@fechaOperacion) as varchar(2))+'/'+cast(month(@fechaOperacion) as varchar(2))+'/'+cast(year(@fechaOperacion) as varchar(4))
-		
-		print @fechaOperacionString;	-- Así sabemos por que fecha va
-		
-
 		/*
-		Se leen los datos de los clientes del xml, sólo los correspondientes a una fecha y se guardan en la tabla temporal de clientes
-		Insercion de los clientes en la tabla temporal de clientes para posteriormente agregarlas a la tabla Clientes de la BD.
-		*/
-	
-		insert @ClientesCrear(nombre, docId, contrasenna)
-			select y.fecha.value('@nombre', 'nvarchar(50)') as nombre,
-				y.fecha.value('@valorDocId', 'nvarchar(50)') as docId,					
-				y.fecha.value('@contrasenna', 'nvarchar(50)') as contrasenna
-				from @xmlOps.nodes('/dataset/fechaOperacion/Cliente') as y(fecha)
-				where y.fecha.value('(../@fecha)', 'varchar(20)') = @fechaOperacion;
-
-		/*
-		Se agregan los clientes (uno por uno) guardados en la tabla temporal de clientes en la tabla Clientes de la BD.
+		Se insertan los movimientos (uno por uno) de la tabla temporal de movimientos en la tabla Movimientos de la BD y
+		se actualiza la cuenta y el estado de cuenta en curso.
 		*/
 
-		select @hi1 = max(C.sec), @low1 = min(C.sec)
-			from @clientesCrear C;
+		select @hi1 = max(M.sec), @low1 = min(M.sec)  
+			from @movimientosCrear M
+			where @fechaOperacion = M.fecha;
 
 		while @low1 <= @hi1
 			begin
+				-- El moviento
+				select @tiempo = convert(varchar(10), GETDATE(), 108) -- Optener el tiempo u hora en que se hace el movimiento
 
-				insert into Cliente(nombre, valorDocId, contrasenna, visible)
-					select C.nombre, C.docId, C.contrasenna, 1
-					from @ClientesCrear C
-					where C.sec = @low1;
+				-- Inserta un movimiento en la BD.
+				insert into Movimiento(fecha, idMovimiento, idTipoMovimiento, invisible, postIp, postTime, monto)
+					select M.fecha, C.id, M.tipoMovimiento, 0, 'Unknown', @tiempo, M.monto
+					from Cuenta C, @movimientosCrear M
+					where C.codigoCuenta = M.codigoCuenta_Movimiento and @low1 = M.sec;
 
-				set @low1 = @low1 + 1;
-			end
+				select @monto = M.monto
+					from @movimientosCrear M
+					where M.sec = @low1;
 
-		/*
-		Se leen las cuentas por fecha y se agregan a la tabla temporal de cuentas para posteriormente ser agregadas a la 
-		tabla clientes de la BD.
-		*/
-
-		insert @CuentasCrear(idCliente, tipoCuenta, codigoCuenta)
-			select y.id.value('@DocIdCliente', 'nvarchar(50)') as idCliente,
-					y.id.value('@tipoCuenta', 'int') as tipoCuenta,					
-					y.id.value('@codigoCuenta', 'nvarchar(50)') as codigoCuenta
-					from @xmlOps.nodes('/dataset/fechaOperacion/Cuenta') as Y(ID)
-					where y.id.value('(../@fecha)', 'varchar(20)')  = @fechaOperacion;
-
-		/*
-		Se agregan todas las cuentas de la tabla temporal de cuentas (una por una) a la tabla Cuentas de la BD y se abre un estado
-		de cuenta para estas nuevas cuentas.
-		*/
-
-		
-		select @low1 = 1;
-		select @hi1 = max(C.id) 
-			from @CuentasCrear C;
-
-		while @low1 <= @hi1
-			begin
-			--Posiblemente se borre *******
-				--select @valorDocId = C.idCliente, @tipoCuenta = C.tipoCuenta, @idCuenta = C.codigoCuenta 
-				--	from @CuentasCrear C
-				--	where C.id = @low1;
-
-				--insert into Cuenta(fechaCreacion, idCliente, idTipoCuenta, interesesAcumulados, saldo, codigoCuenta)
-				--	select @fechaOperacion, C.id, F.id, 0.00, 0.00, @idCuenta
-				--	from Cliente C, TipoCuenta F
-				--	where C.valorDocId = @valorDocId and F.id = @tipoCuenta;
-
-				insert into Cuenta(fechaCreacion, idCliente, idTipoCuenta, interesesAcumulados, saldo, codigoCuenta)
-					select @fechaOperacion, C.id, T.id, 0, 0, CC.codigoCuenta
-					from @CuentasCrear CC, Cliente C, TipoCuenta T
-					where CC.id = @low1 and CC.idCliente = C.valorDocId and T.id = @tipoCuenta;
-
-				--insert into EstadoCuenta(idCuenta, nombre, saldoInicial, saldoFinal, fechaInicial, fechaFinal, cantmMaxATM, cantMaxManual, enProceso, saldoMinimo)
-				--	select C.idCliente, 'Estado de cuenta del: ', C.saldo, C.saldo, @fechaOperacion, @fechaOperacion, 0, 0, 1, C.saldo
-				--	from Cuenta C
-				--	where C.id = @low1;
-				set @low1 = @low1 + 1;
-			end
-
-
-		/*
-		Se leen los movimientos del xml por fechas y se guardan en la tabla temporal de los movimientos para posteriot=rmente ser 
-		agregados a la BD.
-		*/
-
-		--insert @movimientosCrear(monto, tipoMovimiento, descripcion, codigoCuenta_Movimiento)
-		--	select y.id.value('@monto', 'money') as idCliente,
-		--			y.id.value('@tipoMovimiento', 'int') as tipoCuenta,					
-		--			y.id.value('@codigoCuenta', 'nvarchar(50)') as codigoCuenta
-		--			from @xmlOps.nodes('/dataset/fechaOperacion/Movimiento') as Y(ID)
-		--			where y.id.value('(../@fecha)', 'varchar(20)')  = @fechaOperacion;
-
-
-		--/*
-		--Se insertan los movimientos (uno por uno) de la tabla temporal de movimientos en la tabla Movimientos de la BD y
-		--se actualiza la cuenta y el estado de cuenta en curso.
-		--*/
-
-		--select @low1 = 1;
-		--select @hi1 = max(M.sec) 
-		--	from @movimientosCrear M;
-
-		--while @low1 <= @hi1
-		--	begin
-
-		--		select @tiempo = convert(varchar(10), GETDATE(), 108)
-
-		--		select @tipoCuenta = C.id, @tipoMovimiento = M.tipoMovimiento
-		--			from Cuenta C, @movimientosCrear M
-		--			where C.codigoCuenta = M.codigoCuenta_Movimiento and M.sec = @low1;
-
-		--		insert into Movimiento(fecha, idMovimiento, idTipoMovimiento, invisible, postIp, postTime, monto)
-		--			select @fechaOperacion, C.id, M.tipoMovimiento, 0, 'Unknown', @tiempo, M.monto
-		--			from Cuenta C, @movimientosCrear M
-		--			where C.codigoCuenta = M.codigoCuenta_Movimiento and M.sec = @low1;
-
-		--		select @monto = M.monto	
-		--			from @movimientosCrear M
-		--			where M.sec = @low1;
 				
-		--		if(@tipoMovimiento = 3 or @tipoMovimiento = 4 or @tipoMovimiento = 5 or @tipoMovimiento = 7 or
-		--			@tipoMovimiento = 8 or @tipoMovimiento = 9 or @tipoMovimiento = 10 or @tipoMovimiento = 11)
-		--			begin
-		--				set @monto = @monto * -1;
-		--			end;
+				select @idCliente = C.idCliente, @tipoMovimiento = M.tipoMovimiento
+					from Cuenta C, @movimientosCrear M
+					where C.codigoCuenta = M.codigoCuenta_Movimiento and M.sec = @low1;
+				
+				-- Suma o resta al saldo dependiendo del tipo de movimiento
+				if(@tipoMovimiento = 3 or @tipoMovimiento = 4 or @tipoMovimiento = 5 or @tipoMovimiento = 7 or
+					@tipoMovimiento = 8 or @tipoMovimiento = 9 or @tipoMovimiento = 10 or @tipoMovimiento = 11)
+					begin
+						update Cuenta
+							set saldo = saldo - @monto
+							where idCliente = @idCliente;
+					end;
+				else
+					begin
+						update Cuenta
+							set saldo = saldo + @monto
+							where idCliente = @idCliente;
+					end;
 
-		--		update Cuenta
-		--			set saldo = saldo + @monto
-		--			where idCliente = @tipoCuenta;
-
-		--		set @low1 = @low1 + 1;
-		--	end
+				set @low1 = @low1 + 1;
+			end
 
 		
 		/*
 		Calcular los intereses diarios (saldo * tasaInteres / 365)
 		*/
 
-		--set @low1 = 1;
-		--select @hi1 = max(C.id) 
-		--	from Cuenta C;
+		set @low1 = 1;
+		select @hi1 = max(C.id) 
+			from Cuenta C;
 
-		--while @low1 <= @hi1
-		--	begin
-		--		select @monto = C.saldo * T.tasaInteres / 365
-		--			from Cuenta C, TipoCuenta T
-		--			where C.id = @low1 and T.id = C.idTipoCuenta;
+		while @low1 <= @hi1
+			begin
+				select @monto = C.saldo * T.tasaInteres / 365
+					from Cuenta C, TipoCuenta T
+					where C.id = @low1 and T.id = C.idTipoCuenta;
 
-		--		update Cuenta 
-		--			set interesesAcumulados = interesesAcumulados + @monto
-		--			where id = @low1;
-		--		set @low1 = @low1 + 1;
-		--	end;
+				update Cuenta 
+					set interesesAcumulados = interesesAcumulados + @monto
+					where id = @low1;
+
+				set @low1 = @low1 + 1;
+			end;
 
 		
 		/*
 		Cerrar y (o) abrir estados de cuenta
 		*/
-		--set @low1 = 1;
-		--select @hi1 = max(E.id)
-		--	from EstadoCuenta E;
+		set @low1 = 1;
+		select @hi1 = max(E.id)
+			from EstadoCuenta E;
 
-		--while @low1 <= @hi1
-		--	begin
-		--		select @fechaEstadoCuenta = dateadd(month, -1 , @fechaOperacion);
+		while @low1 <= @hi1
+			begin
 
-		--		select @fechaEstadoCuenta = E.fechaInicial, @idCuenta = E.idCuenta, @monto = C.interesesAcumulados
-		--			from EstadoCuenta E, Cuenta C
-		--			where E.id = @low1 and C.id = E.idCuenta;
-				
-		--		update Cuenta
-		--			set saldo = saldo + @monto
-		--			where id = @idCuenta;
+				select @fechaOperacion = dateadd(month, -1 , @fechaOperacion);
 
-		--		update EstadoCuenta
-		--			set fechaFinal = @fechaOperacion, enProceso = 0
-		--			where id = @low1 and fechaInicial <= @fechaEstadoCuenta;
+				select @fechaEstadoCuenta = E.fechaInicial, @idCuenta = E.idCuenta
+					from EstadoCuenta E
+					where E.id = @low1;
 
-		--		set @low1 = @low1 + 1;
-		--	end 
+				if (@fechaOperacion >= @fechaEstadoCuenta)
+				begin
+					update Cuenta
+						set saldo = saldo + interesesAcumulados, interesesAcumulados = 0
+						where id = @idCuenta;
+
+					select @monto = C.saldo
+						from Cuenta C
+						where id = @idCuenta;
+					
+					update EstadoCuenta
+						set fechaFinal = @fechaOperacion, enProceso = 0, saldoFinal = @monto
+						where id = @low1;
+				end;
+
+				set @low1 = @low1 + 1;
+			end 
+
 		set @fechaIncio = @fechaIncio + 1;
-		--select 'cuando diego mendez duerme sueña con comersela toda'
-		delete @ClientesCrear;
-		delete @CuentasCrear;
-		delete @movimientosCrear;
+	
 	end; -- Fin del while grande
 	go
 
 	/*
 	https://stackoverflow.com/questions/668087/sql-server-openxml-how-to-get-attribute-value
+	https://www.blogger.com/blogger.g?blogID=4475082695685755918#allposts/postNum=0
 	*/
+
 set nocount off
 use master
 go
