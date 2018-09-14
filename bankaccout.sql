@@ -80,7 +80,7 @@ create table Movimiento
 	idMovimiento int constraint FKMovimiento_Cuenta references Cuenta(id) not null,
 	idTipoMovimiento int constraint FKMovimiento_TipoMovimiento references TipoMovimiento(id) not null,
 	fecha date not null,
-	postIp nvarchar(216) not null,
+	postIp nvarchar(16) not null,
 	postTime time not null,
 	invisible bit not null,
 	monto money not null
