@@ -6,9 +6,10 @@
     <title>Página web con Bootstrap</title>
 
     <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/login.css">
   </head>
   <body>
-    <div class="container-fluid bg-dark py-1">
+    <div class="container-fluid bg-dark py-2">
       <div class="container text-white">
         <h2>Validación de credenciales</h2>
         <p>Se deben ingresar las credenciales para iniciar sesión en el banco del ITCR.</p>
@@ -16,27 +17,29 @@
       <hr class="bg-white">
     </div>
 
-    <div class="container-fluid py-5 bg-dark text-white">
-    <div class="container bg-dark text-white">
+    <div class="container-fluid py-5 text-white">
+    <div class="container text-white">
       <div class="row">
-        <div class="col-2">
-          <p>Usuario: </p>
+        <div class="col-4">
         </div>
         <div class="col-3">
-          <input type="text" name="" value="" placeholder="Diego Méndez">
+          <label for="usr">Usuario:</label>
+          <input type="text" class="form-control" id="usr">
         </div>
       </div>
 
       <div class="row">
-        <div class="col-2">
-          <p>Contraseña: </p>
+        <div class="col-4">
         </div>
         <div class="col-3">
-          <input type="text" name="" value="" placeholder="************">
+          <label for="usr">Contraseña:</label>
+          <input type="text" class="form-control" id="pwd">
         </div>
       </div>
 
       <div class="row">
+        <div class="col-3">
+        </div>
         <div class="col-2">
         </div>
         <div class="col-3">
