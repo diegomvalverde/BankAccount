@@ -2,28 +2,56 @@
 <html lang="en" dir="ltr">
   <head>
     <meta charset="utf-8">
-    <title>"Página web BankAccount"</title>
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0">
+    <title>Página web con Bootstrap</title>
 
+    <link rel="stylesheet" href="css/bootstrap.min.css">
   </head>
   <body>
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
-    <h3>Ingresa tu identificación:</h3>
-    <input type="text" name="usuario" value="" placeholder="604400430">
-    <h3>Ingresa tu contraseña:</h3>
-    <input type="text" name="contrasenna" value="" placeholder="JuanaDeArco">
-    <!-- <input type="submit" name="Ingresar" value="Ingresar" onclick="validarUsuario()"> -->
-    <button type="submit" name="button" value="call">Ingresar</button>
+    <div class="container-fluid bg-dark py-1">
+      <div class="container text-white">
+        <h2>Validación de credenciales</h2>
+        <p>Se deben ingresar las credenciales para iniciar sesión en el banco del ITCR.</p>
+      </div>
+      <hr class="bg-white">
+    </div>
 
-    <!-- <script type="text/javascript">
-    function validarUsuario()
-    {
-      $.ajax({
-        url:"http://localhost/ConeccionSQL/conexion.php", //the page containing php script
-        data: ({x: "A"})
-        type: "POST" //request type
-     });
-    }
-    </script> -->
+    <div class="container-fluid py-5 bg-dark text-white">
+    <div class="container bg-dark text-white">
+      <div class="row">
+        <div class="col-2">
+          <p>Usuario: </p>
+        </div>
+        <div class="col-3">
+          <input type="text" name="" value="" placeholder="Diego Méndez">
+        </div>
+      </div>
 
+      <div class="row">
+        <div class="col-2">
+          <p>Contraseña: </p>
+        </div>
+        <div class="col-3">
+          <input type="text" name="" value="" placeholder="************">
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-2">
+        </div>
+        <div class="col-3">
+          <br>
+          <button type="button" class="btn btn-primary" name="button">Ingresar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+
+
+
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
   </body>
 </html>

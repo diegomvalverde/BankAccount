@@ -105,6 +105,7 @@ create table EstadoCuenta
 create table MovimientoInteres
 (
 	id int primary key not null,
+	tipoMovInteres int constraint FKEstadoMovimientoInteres_TipoMovIntereses references Cuenta(id) not null,
 	fecha date not null,
 	saldo money not null,
 	interesDiario float not null

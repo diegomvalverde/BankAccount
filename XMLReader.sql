@@ -495,9 +495,10 @@ while @fechaIncio <= @fechaFinal
 
 		while @low1 <= @hi1
 			begin
-				select @monto = C.saldo * T.tasaInteres / 365
+				set @monto = 0;
+				select @monto = C.saldo * T.tasaInteres / 365 / 100
 					from Cuenta C, TipoCuenta T
-					where C.id = @low1 and T.id = C.idTipoCuenta;
+					where C.id = @low1 and T.id = C.idTipoCuenta and C.saldo > 0;
 
 				update Cuenta 
 					set interesesAcumulados = interesesAcumulados + @monto
@@ -526,9 +527,16 @@ while @fechaIncio <= @fechaFinal
 
 				if (@fechaOperacion >= @fechaEstadoCuenta)
 				begin
+
+
 					update Cuenta
 						set saldo = saldo + interesesAcumulados, interesesAcumulados = 0
 						where id = @idCuenta;
+
+					insert into MovimientoInteres(fecha, interesDiario, saldo)
+						select @fechaOperacion, T.tasaInteres, C.saldo
+						from Cuenta C, TipoCuenta T
+						where C.idCliente = @idCliente and C.idTipoCuenta = T.id;
 
 					select @monto = C.saldo
 						from Cuenta C
