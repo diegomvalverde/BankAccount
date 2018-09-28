@@ -6,55 +6,83 @@
     <title>Inicio sesión</title>
 
     <link rel="stylesheet" href="css/bootstrap.min.css">
-    <link rel="stylesheet" href="css/login.css">
-  </head>
-  <body>
-    <div class="container-fluid bg-dark py-2">
-      <div class="container text-white">
-        <h2>Validación de credenciales</h2>
-        <p>Se deben ingresar las credenciales para iniciar sesión en el banco del ITCR.</p>
-      </div>
-      <hr class="bg-white">
-    </div>
-
-    <div class="container-fluid py-5 text-white">
-    <div class="container text-white">
-      <div class="row">
-        <div class="col-4">
-        </div>
-        <div class="col-3">
-          <label for="usr">Usuario:</label>
-          <input type="text" class="form-control" id="usr">
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-4">
-        </div>
-        <div class="col-3">
-          <label for="usr">Contraseña:</label>
-          <input type="text" class="form-control" id="pwd">
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-3">
-        </div>
-        <div class="col-2">
-        </div>
-        <div class="col-3">
-          <br>
-          <button type="button" class="btn btn-primary" name="button">Ingresar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  </div>
-
-
-
+    <!-- <link rel="stylesheet" href="css/login.css"> -->
 
     <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
+    <script>
+      function consultar()
+      {
+        $.ajax
+        (
+          {
+            data:  $("#formulario").serialize(), //lo que se va a enviar
+            url: "http://localhost/ConeccionSQL/conexion.php", // .php que recibe la petición
+            type:  'post', //método de envio
+            success:  function (response)
+            { //procesado de la respuesta del .php
+              $("#resultado").html(response);
+              alert(response);
+              if(response == 2)
+              {
+                admin();
+              }
+            }
+          }
+        );
+      }
+    </script>
+
+    <script>
+      function admin()
+      {
+        alert("Se abrirá una pagina de admin");
+      }
+    </script>
+  <body>
+      <div class="container-fluid bg-dark py-2">
+        <div class="container text-white">
+          <h2>Validación de credenciales</h2>
+          <p>Se deben ingresar las credenciales para iniciar sesión en el banco del ITCR.</p>
+        </div>
+        <hr class="bg-white">
+      </div>
+
+      <form method="post" id="formulario">
+      <div class="container-fluid py-5 text-white">
+      <div class="container text-white">
+        <div class="row">
+          <div class="col-4">
+          </div>
+          <div class="col-3">
+            <label for="usr">Usuario:</label>
+            <input type="text" class="form-control" name="usr">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4">
+          </div>
+          <div class="col-3">
+            <label for="usr">Contraseña:</label>
+            <input type="text" class="form-control" name="pwd">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-3">
+          </div>
+          <div class="col-2">
+          </div>
+          <div class="col-3">
+            <br>
+            <button type="button" class="btn btn-primary" onclick="consultar();">Ingresar</button>
+            </div>
+        </div>
+      </div>
+    </div>
+    </div>
+    </form>
+    Resultado: <span id="resultado">0</span>
   </body>
 </html>

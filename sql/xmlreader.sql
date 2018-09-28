@@ -533,8 +533,8 @@ while @fechaIncio <= @fechaFinal
 						set saldo = saldo + interesesAcumulados, interesesAcumulados = 0
 						where id = @idCuenta;
 
-					insert into MovimientoInteres(fecha, interesDiario, saldo)
-						select @fechaOperacion, T.tasaInteres, C.saldo
+					insert into MovimientoInteres(fecha, interesDiario, saldo, tipoMovInteres)
+						select @fechaOperacion, T.tasaInteres, C.saldo, 6
 						from Cuenta C, TipoCuenta T
 						where C.idCliente = @idCliente and C.idTipoCuenta = T.id;
 

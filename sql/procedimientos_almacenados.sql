@@ -105,26 +105,25 @@ go
 
 create procedure dbo.casp_consultausuario
 @valorDocId nvarchar(50),
-@contrasenna nvarchar(50)
+@contrasenna nvarchar(50),
+@salida as int output
 
 	as
 	begin
-		declare @existe int = -1;
 		begin try
-
-			select @existe = 1
+			select @salida = 1
 				from Cliente C
 				where C.valorDocId = @valorDocId and C.contrasenna = @contrasenna;
 
-			select @existe = 2
+			select @salida = 2
 				from Administrador A
 				where A.valorDocId = @valorDocId and A.contrasenna = @contrasenna;
-			return @existe;
+			return 1;
 
 		end try
 		begin catch
 			select error_message();
-			return @existe;
+			return -1;
 		end catch
 	end
 go
