@@ -6,7 +6,7 @@
     <title>Inicio sesión</title>
 
     <link rel="stylesheet" href="css/bootstrap.min.css">
-    <!-- <link rel="stylesheet" href="css/login.css"> -->
+    <link rel="stylesheet" href="css/login.css">
 
     <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
@@ -17,15 +17,23 @@
         (
           {
             data:  $("#formulario").serialize(), //lo que se va a enviar
-            url: "http://localhost/ConeccionSQL/conexion.php", // .php que recibe la petición
+            url: "http://localhost/ConexionSQL/conexion.php", // .php que recibe la petición
             type:  'post', //método de envio
             success:  function (response)
             { //procesado de la respuesta del .php
               $("#resultado").html(response);
-              alert(response);
+              // alert(response);
               if(response == 2)
               {
                 admin();
+              }
+              else if (response == 1)
+              {
+                client();
+              }
+              else
+              {
+                  alert("Por favor verfique sus datos");
               }
             }
           }
@@ -36,7 +44,13 @@
     <script>
       function admin()
       {
-        alert("Se abrirá una pagina de admin");
+        window.open("http://localhost/ConexionSQL/admin.html","_self")
+      }
+    </script>
+    <script>
+      function client()
+      {
+        window.open("http://localhost/ConexionSQL/client.html","_self")
       }
     </script>
   <body>
@@ -56,7 +70,7 @@
           </div>
           <div class="col-3">
             <label for="usr">Usuario:</label>
-            <input type="text" class="form-control" name="usr">
+            <input type="text" class="form-control" name="usr" id="usr">
           </div>
         </div>
 
@@ -65,7 +79,7 @@
           </div>
           <div class="col-3">
             <label for="usr">Contraseña:</label>
-            <input type="text" class="form-control" name="pwd">
+            <input type="text" class="form-control" name="pwd" id="pwd">
           </div>
         </div>
 
@@ -76,8 +90,8 @@
           </div>
           <div class="col-3">
             <br>
-            <button type="button" class="btn btn-primary" onclick="consultar();">Ingresar</button>
-            </div>
+            <button type="button" class="btn btn-primary" onclick="consultar();">Validar</button>
+          </div>
         </div>
       </div>
     </div>

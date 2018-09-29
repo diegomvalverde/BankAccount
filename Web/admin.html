@@ -7,6 +7,68 @@
 
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="css/admin.css">
+
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script>
+      function agregarCliente()
+      {
+        $.ajax
+        (
+          {
+            data:  $("#formulario").serialize(), //lo que se va a enviar
+            url: "http://localhost/ConexionSQL/conexion.php", // .php que recibe la petición
+            type:  'post', //método de envio
+            success:  function (response)
+            { //procesado de la respuesta del .php
+              $("#resultado").html(response);
+              // alert(response);
+              if (response == 1)
+              {
+                alert("Se ha agregado satisfactoriamente al usuario")
+                document.getElementById("clientId").value="";
+                document.getElementById("clientName").value="";
+                document.getElementById("clientPassword").value="";
+              }
+              else
+              {
+                alert(response);
+                // alert("Por favor verfique sus datos");
+              }
+            }
+          }
+        );
+      }
+    </script>
+    <script>
+      function agregarCuenta()
+      {
+        $.ajax
+        (
+          {
+            data:  $("#formulario").serialize(), //lo que se va a enviar
+            url: "http://localhost/ConexionSQL/conexion.php", // .php que recibe la petición
+            type:  'post', //método de envio
+            success:  function (response)
+            { //procesado de la respuesta del .php
+              $("#resultado").html(response);
+              // alert(response);
+              if (response == 1)
+              {
+                alert("Se ha agregado satisfactoriamente la cuenta")
+                document.getElementById("ownerId").value="";
+                document.getElementById("accountType").value="";
+              }
+              else
+              {
+                alert(response);
+                // alert("Por favor verfique sus datos");
+              }
+            }
+          }
+        );
+      }
+    </script>
   </head>
   <body>
     <div class="container-fluid bg-dark py-2">
@@ -17,6 +79,7 @@
       <hr class="bg-white">
     </div>
 
+    <form method="post" id="formulario">
     <div class="container-fluid py-5 text-white">
     <div class="container">
       <div class="row">
@@ -35,14 +98,14 @@
       <div class="row">
         <div class="col-4">
           <label for="usr">Identificación:</label>
-          <input type="text" class="form-control" id="id">
+          <input type="text" class="form-control" name="clientId" id="clientId">
         </div>
         <div class="col-4">
 
         </div>
         <div class="col-4">
           <label for="usr">Identificación del dueño:</label>
-          <input type="text" class="form-control" id="id">
+          <input type="text" class="form-control" name="ownerId" id="ownerId">
         </div>
       </div>
     </div>
@@ -51,14 +114,14 @@
       <div class="row">
         <div class="col-4">
           <label for="usr">Nombre:</label>
-          <input type="text" class="form-control" id="name">
+          <input type="text" class="form-control" name="clientName" id="clientName">
         </div>
         <div class="col-4">
 
         </div>
         <div class="col-4">
           <label for="usr">Tipo de cuenta:</label>
-          <input type="text" class="form-control" id="name">
+          <input type="text" class="form-control" name="accountType" id="accountType">
         </div>
       </div>
     </div>
@@ -67,14 +130,14 @@
       <div class="row">
         <div class="col-4">
           <label for="usr">Contraseña:</label>
-          <input type="text" class="form-control" id="pwd">
+          <input type="text" class="form-control" name="clientPassword" id="clientPassword">
         </div>
         <div class="col-4">
 
         </div>
         <div class="col-4">
           <br>
-          <button type="button" class="btn btn-primary" name="button">Agregar Cuenta</button>
+          <button type="button" class="btn btn-primary" onclick="agregarCuenta();"name="button">Agregar Cuenta</button>
         </div>
       </div>
     </div>
@@ -84,13 +147,11 @@
     <div class="container">
       <div class="row">
         <div class="col-4">
-          <button type="button" class="btn btn-primary" name="button">Agregar Cliente</button>
+          <button type="button" class="btn btn-primary" onclick="agregarCliente();">Agregar Cliente</button>
         </div>
       </div>
     </div>
   </div>
-
-    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
-    <script src="js/bootstrap.min.js"></script>
+  </form>
   </body>
 </html>

@@ -7,31 +7,27 @@ go
 create procedure dbo.casp_agregarcuenta
 	@clienteId nvarchar(50), --valorDocId
 	@tipoCuenta int,
-	@codigoCuenta nvarchar(50)
+	@salida as int output
 	
 	as
-	begin;
+	begin
 
 		set transaction isolation level read committed --Más lento pero más consistente
 		begin transaction;
 		begin try
-			
-			declare @id int;
-			select @id = C.id 
-				from Cliente C 
-				where @clienteId = C.valorDocId;
-			
 			insert into Cuenta(fechaCreacion, idTipoCuenta, idCliente, codigoCuenta, interesesAcumulados, saldo)
-				select getdate(), @tipoCuenta, @id, @codigoCuenta, 0, 0
+				select getdate(), @tipoCuenta, C.id, 'No necesario', 0, 0
 				from Cliente C
 				where C.valorDocId = @clienteId;
 
 			commit
+			set @salida = 1;
 			return 1;
 		end try
 		begin catch
 			rollback;
 			select error_message();
+			set @salida = -1;
 			return -1;
 		end catch
 	end
@@ -41,7 +37,8 @@ create procedure dbo.casp_movimiento
 	@destinatario nvarchar(50), --Numero de cuenta (codigoCuenta)
 	@monto money,
 	@tipoMov int, -- ATM = 2, Manual = 1 (+) -- Retiro ATM = 4, Retiro Manual = 3, Compras = 5 (-)
-	@postIp nvarchar(16)
+	--@postIp nvarchar(16)
+	@salida as int output
 
 	as
 	begin;
@@ -59,7 +56,7 @@ create procedure dbo.casp_movimiento
 		begin try
 
 			insert into Movimiento(fecha, idMovimiento, idTipoMovimiento, invisible, monto, postIp, postTime)
-				select getdate(), C.id, @tipoMov, 0, @monto, @postIp, @tiempo
+				select getdate(), C.id, @tipoMov, 0, @monto, 'Desconocido', @tiempo
 				from Cuenta C
 				where C.codigoCuenta = @destinatario;
 
@@ -68,11 +65,13 @@ create procedure dbo.casp_movimiento
 				where codigoCuenta = @destinatario;
 								
 			commit
+			set @salida = 1;
 			return 1;
 		end try
 		begin catch
 			rollback;
 			select error_message();
+			set @salida = -1;
 			return -1;
 		end catch
 	end
@@ -81,10 +80,12 @@ go
 create procedure dbo.casp_agregarcliente
 @valorDocId nvarchar(50),
 @nombre nvarchar(50),
-@contrasenna nvarchar(50)
+@contrasenna nvarchar(50),
+@salida as int output
 
 	as
 	begin
+		set @salida = 1;
 		set transaction isolation level read committed
 		begin transaction
 		begin try
@@ -93,11 +94,11 @@ create procedure dbo.casp_agregarcliente
 					values(@nombre, @valorDocId, @contrasenna, 1);
 				commit
 				return 1;
-
 		end try
 		begin catch
 			rollback;
 			select error_message();
+			set @salida = -1;
 			return -1;
 		end catch
 	end
@@ -123,6 +124,7 @@ create procedure dbo.casp_consultausuario
 		end try
 		begin catch
 			select error_message();
+			set @salida=-1;
 			return -1;
 		end catch
 	end

@@ -137,7 +137,8 @@ create table TipoEvento
 
 
 --// Inserciones importantes
-
+insert into Administrador(contrasenna, nombre, valorDocId)
+values ('diego', 'diego', '604400433');
 go
 
 

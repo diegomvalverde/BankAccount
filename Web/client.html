@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0">
+    <title>Cliente</title>
+
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/user.css">
+
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script>
+      function depositar()
+      {
+        $.ajax
+        (
+          {
+            data:  $("#formulario").serialize(), //lo que se va a enviar
+            url: "http://localhost/ConexionSQL/conexion.php", // .php que recibe la petición
+            type:  'post', //método de envio
+            success:  function (response)
+            { //procesado de la respuesta del .php
+              $("#resultado").html(response);
+              // alert(response);
+              if (response == 1)
+              {
+                alert("El deposito se ha hecho de manera correcta");
+                document.getElementById('addressee').value="";
+                document.getElementById('moneyPush').value="";
+
+              }
+              else
+              {
+                alert(response);
+                // alert("Por favor verfique sus datos, el deposito no se ha hecho");
+              }
+            }
+          }
+        );
+      }
+    </script>
+  </head>
+  <body>
+    <div class="container-fluid bg-dark py-2">
+      <div class="container text-white">
+        <h3>Administración de tus cuentas</h3>
+        <p>Se pueden hacer depositos, "retirar" dinero, consultar estados de cuenta y ver información de la cuenta.</p>
+      </div>
+      <hr class="bg-white">
+    </div>
+
+    <div class="container-fluid py-5 text-dark">
+    <div class="container">
+      <div class="row">
+        <div class="col-4">
+          <p>Deposito</p>
+        </div>
+        <div class="col-4">
+
+        </div>
+        <div class="col-4">
+          <p>Retiro</p>
+        </div>
+      </div>
+
+    <form method="post" id="formulario">
+      <div class="container">
+        <div class="row">
+          <div class="col-4">
+            <label for="usr">Destinatario:</label>
+            <input type="text" class="form-control" name="addressee" id="addressee">
+          </div>
+          <div class="col-4">
+
+          </div>
+          <div class="col-4">
+            <label for="usr">Monto</label>
+            <input type="text" class="form-control" name="moneyGet" id="moneyGet">
+          </div>
+        </div>
+      </div>
+
+      <div class="container">
+        <div class="row">
+          <div class="col-4">
+            <label for="usr">Monto:</label>
+            <input type="text" class="form-control" name="moneyPush" id="moneyPush">
+          </div>
+          <div class="col-4">
+
+          </div>
+          <!-- <div class="col-4">
+            <label for="usr">Tipo de cuenta:</label>
+            <input type="text" class="form-control" id="name">
+          </div> -->
+        </div>
+      </div>
+
+      <div class="container">
+        <div class="row">
+          <!-- <div class="col-4"> -->
+            <!-- <label for="usr">Contraseña:</label>
+            <input type="text" class="form-control" id="pwd"> -->
+            <div class="col-4">
+              <br>
+              <button type="button" class="btn btn-primary" onclick='depositar();' name="button">Depositar</button>
+            </div>
+          <!-- </div> -->
+          <div class="col-4">
+
+          </div>
+          <div class="col-4">
+            <br>
+            <button type="button" class="btn btn-primary" name="button">Retirar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+  </body>
+</html>
