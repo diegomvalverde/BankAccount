@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<dataset>
+	<TipoCuenta id="1" nombre="Personal" tasaInteres="11" saldoMinimo="$9000.00" QMaxManual="10" QMaxATM="10" multaSaldoMinimo="$100.00" multaQMaxManual="$100.00" multaQMaxATM="$100.00" multaSaldoNegativo="$100.00" cargoXservicio="$3500.00"/>
+	<TipoCuenta id="2" nombre="Empresarial" tasaInteres="18" saldoMinimo="$10000.00" QMaxManual="20" QMaxATM="20" multaSaldoMinimo="$200.00" multaQMaxManual="$200.00" multaQMaxATM="$200.00" multaSaldoNegativo="$200.00" cargoXservicio="$3500.00"/>
+	<TipoCuenta id="3" nombre="Personal Oro" tasaInteres="20" saldoMinimo="$11000.00" QMaxManual="30" QMaxATM="30" multaSaldoMinimo="$300.00" multaQMaxManual="$300.00" multaQMaxATM="$300.00" multaSaldoNegativo="$300.00" cargoXservicio="$3500.00"/>
+	<TipoCuenta id="4" nombre="Empresarial Oro" tasaInteres="30" saldoMinimo="$12000.00" QMaxManual="40" QMaxATM="40" multaSaldoMinimo="$400.00" multaQMaxManual="$400.00" multaQMaxATM="$400.00" multaSaldoNegativo="$400.00" cargoXservicio="$3500.00"/>
+</dataset>

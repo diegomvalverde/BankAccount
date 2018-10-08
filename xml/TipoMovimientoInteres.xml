@@ -1,0 +1,5 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<dataset>
+	<TipoMovimientoInteres id="1" nombre="Débito" descripcion="descripcion debito"/>
+	<TipoMovimientoInteres id="2" nombre="Crédito" descripcion="descripcion credito"/>
+</dataset>

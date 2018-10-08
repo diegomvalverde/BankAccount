@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<dataset>
+	<TipoEvento id="1" nombre="Insertar en cliente" descripcion="Descripcion insertar en cliente"/>
+	<TipoEvento id="2" nombre="Modificar en cliente" descripcion="Descripcion modificar en cliente"/>
+	<TipoEvento id="3" nombre="Borrar en cliente" descripcion="Descripcion borrar en cliente"/>
+	<TipoEvento id="4" nombre="Insertar en cuenta" descripcion="Descripcion insertar en cuenta"/>
+	<TipoEvento id="5" nombre="Modificar en cuenta" descripcion="Descripcion modificar en cuenta"/>
+	<TipoEvento id="6" nombre="Borrar en cuenta" descripcion="Descripcion borrar en cuenta"/>
+	<TipoEvento id="7" nombre="Insertar en tipo de cuenta" descripcion="Descripcion insertar en tipo de cuenta"/>
+	<TipoEvento id="8" nombre="Modificar en tipo de cuenta" descripcion="Descripcion modificar en tipo de cuenta"/>
+	<TipoEvento id="9" nombre="Borrar en tipo de cuenta" descripcion="Descripcion borrar en tipo de cuenta"/>
+</dataset>

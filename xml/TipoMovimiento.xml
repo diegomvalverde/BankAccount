@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<dataset>
+	<TipoMovimiento id="1" nombre="Deposito Manual" descripcion="Descripcion deposito Manual"/>
+	<TipoMovimiento id="2" nombre="Deposito ATM" descripcion="Descripcion deposito ATM"/>
+	<TipoMovimiento id="3" nombre="Retiro Manual" descripcion="Descripcion retiro Manual"/>
+	<TipoMovimiento id="4" nombre="Retiro ATM" descripcion="Descripcion retiro ATM"/>
+	<TipoMovimiento id="5" nombre="Compras" descripcion="Descripcion compras"/>
+	<TipoMovimiento id="6" nombre="Interes acumulado mensual" descripcion="Descripcion interes acumulado mensual"/>
+	<TipoMovimiento id="7" nombre="Multa por saldo negativo" descripcion="Descripcion multa por saldo negativo"/>
+	<TipoMovimiento id="8" nombre="Multa por exceder maximo de operaciones en cajero manual" descripcion="Descripcion multa por exceder maximo de operaciones en cajero manual"/>
+	<TipoMovimiento id="9" nombre="Multa por exceder maximo de operaciones en atm" descripcion="Descripcion multa por exceder maximo de operaciones en atm"/>
+	<TipoMovimiento id="10" nombre="Cargos por Servicio" descripcion="Descripcion cargos por Servicio"/>
+	<TipoMovimiento id="11" nombre="Pago de servicios publicos" descripcion="Descripcion pago de servicios publicos"/>
+	<TipoMovimiento id="12" nombre="Reversion de compras" descripcion="Descripcion reversion de compras"/>
+	
+</dataset>
