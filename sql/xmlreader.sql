@@ -513,24 +513,20 @@ while @fechaIncio <= @fechaFinal
 		*/
 		set @low1 = 1;
 		select @hi1 = max(E.id)
-			from EstadoCuenta E;
+			from EstadoCuenta E
+			where E.enProceso = 1;
 
 		while @low1 <= @hi1
 			begin
 
 				select @fechaEstadoCuenta = E.fechaInicial, @idCuenta = E.idCuenta
 					from EstadoCuenta E
-					where E.id = @low1 and E.enProceso = 1;
+					where E.enProceso = 1;
 
 				select @fechaEstadoCuenta = dateadd(month, 1 , @fechaEstadoCuenta);
 
 				if (@fechaOperacion >= @fechaEstadoCuenta)
 				begin
-
-
-					update Cuenta
-						set saldo = saldo + interesesAcumulados, interesesAcumulados = 0
-						where id = @idCuenta;
 
 					insert into MovimientoInteres(fecha, interesDiario, saldo, tipoMovInteres)
 						select @fechaOperacion, T.tasaInteres, C.saldo, 2
@@ -541,14 +537,19 @@ while @fechaIncio <= @fechaFinal
 						from Cuenta C
 						where C.id = @idCuenta;
 					
-					update EstadoCuenta
-						set fechaFinal = @fechaOperacion, enProceso = 0, saldoFinal = @monto
-						where id = @low1;
 
 					insert into EstadoCuenta(idCuenta, nombre, saldoInicial, saldoFinal, fechaInicial, fechaFinal, cantmMaxATM, cantMaxManual, enProceso, saldoMinimo)
 						select C.idCliente, 'Estado de cuenta', C.saldo, 0, @fechaOperacion, @fechaOperacion, 0, 0, 1, C.saldo
 						from Cuenta C
 						where C.id = @idCuenta;
+
+					update EstadoCuenta
+						set fechaFinal = @fechaOperacion, enProceso = 0, saldoFinal = @monto
+						where id = @low1;
+
+					update Cuenta
+						set saldo = saldo + interesesAcumulados, interesesAcumulados = 0
+						where id = @idCuenta;
 				end;
 
 				set @low1 = @low1 + 1;
