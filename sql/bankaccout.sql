@@ -118,15 +118,6 @@ create table TipoMovInteres
 	descripcion nvarchar(50) not null
 )
 
-create table Evento
-(
-	id int identity primary key not null,
-	postIP nvarchar(16) not null,
-	postTime date not null,
-	xmlAntes xml not null,
-	xmlDepues xml not null,
-	entidadID bit not null, --//?
-)
 
 create table TipoEvento
 (
@@ -135,10 +126,22 @@ create table TipoEvento
 	descripcion nvarchar(50) not null
 )
 
+create table Evento
+(
+	id int identity(1,1) primary key not null,
+	tipoEvento int constraint FKEvento_TipoEvento references TipoEvento(id) not null,
+	postIp nvarchar(16) not null,
+	postDate date not null,
+	--xmlAntes xml not null,
+	--xmlDepues xml not null,
+	--entidadID bit not null, --//?
+)
+
+
 
 --// Inserciones importantes
 insert into Administrador(contrasenna, nombre, valorDocId)
-values ('diego', 'diego', '604400433');
+values ('123', '123', '123');
 go
 
 

@@ -444,7 +444,7 @@ while @fechaIncio <= @fechaFinal
 
 				-- Inserta un movimiento en la BD.
 				insert into Movimiento(fecha, idMovimiento, idTipoMovimiento, invisible, postIp, postTime, monto)
-					select M.fecha, C.id, M.tipoMovimiento, 0, 'Unknown', @tiempo, M.monto
+					select M.fecha, C.id, M.tipoMovimiento, 0, 'XML', @tiempo, M.monto
 					from Cuenta C, @movimientosCrear M
 					where C.codigoCuenta = M.codigoCuenta_Movimiento and @low1 = M.sec;
 
@@ -479,14 +479,14 @@ while @fechaIncio <= @fechaFinal
 
 				update EstadoCuenta 
 					set saldoMinimo = @monto
-					where @monto < saldoMinimo and idCuenta = @idCuenta;
+					where @monto < saldoMinimo and idCuenta = @idCuenta and enProceso = 1;
 
 				set @low1 = @low1 + 1;
 			end
 
 		
 		/*
-		Calcular los intereses diarios (saldo * tasaInteres / 365)
+		Calcular los intereses diarios (saldo * tasaInteres / 365 / 100)
 		*/
 
 		set @low1 = 1;
@@ -513,8 +513,7 @@ while @fechaIncio <= @fechaFinal
 		*/
 		set @low1 = 1;
 		select @hi1 = max(E.id)
-			from EstadoCuenta E
-			where E.enProceso = 1;
+			from EstadoCuenta E;
 
 		while @low1 <= @hi1
 			begin
@@ -534,7 +533,7 @@ while @fechaIncio <= @fechaFinal
 						where id = @idCuenta;
 
 					insert into MovimientoInteres(fecha, interesDiario, saldo, tipoMovInteres)
-						select @fechaOperacion, T.tasaInteres, C.saldo, 6
+						select @fechaOperacion, T.tasaInteres, C.saldo, 2
 						from Cuenta C, TipoCuenta T
 						where C.idCliente = @idCliente and C.idTipoCuenta = T.id;
 

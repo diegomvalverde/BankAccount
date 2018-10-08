@@ -6,7 +6,7 @@
     <title>Cliente</title>
 
     <link rel="stylesheet" href="css/bootstrap.min.css">
-    <link rel="stylesheet" href="css/user.css">
+    <link rel="stylesheet" href="css/login.css">
 
     <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
@@ -40,7 +40,52 @@
         );
       }
     </script>
+    <script>
+      function estadosCuenta()
+      {
+        $.ajax
+        (
+          {
+            data:  $("#formulario").serialize(), //lo que se va a enviar
+            url: "http://localhost/ConexionSQL/conexion.php", // .php que recibe la petición
+            type:  'post', //método de envio
+            success:  function (response)
+            { //procesado de la respuesta del .php
+              // $("#accountstate").html(response);
+              // alert(response);
+              if (response != "")
+              {
+                alert(response);
+                document.getElementById('accountstate').value=response;
+              }
+              else
+              {
+                // alert(response);
+                alert("Por favor verfique sus datos");
+              }
+            }
+          }
+        );
+      }
+    </script>
+    <script>
+      function valida(e)
+      {
+        tecla = (document.all) ? e.keyCode : e.which;
+
+        //Tecla de retroceso para borrar, siempre la permite
+        if (tecla==8){
+            return true;
+        }
+
+        // Patron de entrada, en este caso solo acepta numeros
+        patron =/[0-9]/;
+        tecla_final = String.fromCharCode(tecla);
+        return patron.test(tecla_final);
+      }
+    </script>
   </head>
+
   <body>
     <div class="container-fluid bg-dark py-2">
       <div class="container text-white">
@@ -50,17 +95,18 @@
       <hr class="bg-white">
     </div>
 
-    <div class="container-fluid py-5 text-dark">
+    <div class="container-fluid py-5 text-white">
     <div class="container">
       <div class="row">
         <div class="col-4">
-          <p>Deposito</p>
+          <h5>Deposito</h5>
+          <!-- <p>Deposito</p> -->
         </div>
         <div class="col-4">
 
         </div>
         <div class="col-4">
-          <p>Retiro</p>
+          <h5>Ultimos estados de cuenta</h5>
         </div>
       </div>
 
@@ -68,54 +114,44 @@
       <div class="container">
         <div class="row">
           <div class="col-4">
+            <label for="">Tipo de movimiento:</label>
+            <input type="text" class="form-control" name="movType" id="movType" onkeypress="return valida(event)">
             <label for="usr">Destinatario:</label>
             <input type="text" class="form-control" name="addressee" id="addressee">
-          </div>
-          <div class="col-4">
-
-          </div>
-          <div class="col-4">
-            <label for="usr">Monto</label>
-            <input type="text" class="form-control" name="moneyGet" id="moneyGet">
-          </div>
-        </div>
-      </div>
-
-      <div class="container">
-        <div class="row">
-          <div class="col-4">
             <label for="usr">Monto:</label>
-            <input type="text" class="form-control" name="moneyPush" id="moneyPush">
-          </div>
-          <div class="col-4">
-
-          </div>
-          <!-- <div class="col-4">
-            <label for="usr">Tipo de cuenta:</label>
-            <input type="text" class="form-control" id="name">
-          </div> -->
-        </div>
-      </div>
-
-      <div class="container">
-        <div class="row">
-          <!-- <div class="col-4"> -->
-            <!-- <label for="usr">Contraseña:</label>
-            <input type="text" class="form-control" id="pwd"> -->
-            <div class="col-4">
-              <br>
-              <button type="button" class="btn btn-primary" onclick='depositar();' name="button">Depositar</button>
-            </div>
-          <!-- </div> -->
-          <div class="col-4">
-
-          </div>
-          <div class="col-4">
+            <input type="text" class="form-control" name="moneyPush" id="moneyPush" onkeypress="return valida(event)">
             <br>
-            <button type="button" class="btn btn-primary" name="button">Retirar</button>
+            <button type="button" class="btn btn-primary" onclick='depositar();' name="button">Depositar</button>
+          </div>
+          <div class="col-4">
+
+          </div>
+          <div class="col-4">
+            <label for="usr">Estados de cuenta:</label>
+            <textarea class="form-control" rows="5" id="accountstate"></textarea>
+            <label for="usr">Cuenta:</label>
+            <input type="text" class="form-control" name="accountId" id="accountId" onkeypress="">
+            <br>
+            <button type="button" class="btn btn-primary" onclick='estadosCuenta();' name="button1">Consultar estados</button>
+
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-4">
+            <!-- <label for="usr">Destinatario:</label>
+            <input type="text" class="form-control" name="addressee" id="addressee"> -->
+          </div>
+          <div class="col-4">
+
+          </div>
+          <div class="col-4">
+            <!-- <label for="usr">Monto</label>
+            <input type="text" class="form-control" name="moneyGet" id="moneyGet"> -->
           </div>
         </div>
       </div>
+
+
     </div>
   </form>
   </body>
