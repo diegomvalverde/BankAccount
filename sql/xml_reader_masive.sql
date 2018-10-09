@@ -17,7 +17,7 @@ Variables para los xml
 declare @xmlOps xml
 set @xmlOps = 
 (
-	select * from openrowset(bulk 'C:\Bases\Operaciones.xml', single_blob) as x
+	select * from openrowset(bulk 'C:\Bases\Operaciones_v2.xml', single_blob) as x
 );
 
 
@@ -411,19 +411,19 @@ while @fechaIncio <= @fechaFinal
 		insert into MovimientoInteres(fecha, interesDiario, saldo, tipoMovInteres)
 			select @fechaOperacion, T.tasaInteres, C.interesesAcumulados, 2
 			from Cuenta C, TipoCuenta T
-			where C.idTipoCuenta = T.id and C.fechaCreacion <= @fechaEstadoCuenta;
+			where C.idTipoCuenta = T.id and C.fechaCreacion = @fechaEstadoCuenta;
 
-		-- Crea un nuevo estado de cuenta para los estados que se cierran
+		 --Crea un nuevo estado de cuenta para los estados que se cierran
 		insert into EstadoCuenta(idCuenta, nombre, saldoInicial, saldoFinal, fechaInicial, fechaFinal, cantmMaxATM, cantMaxManual, enProceso, saldoMinimo)
 			select C.idCliente, 'Estado de cuenta', C.saldo, 0, @fechaOperacion, @fechaOperacion, 0, 0, 1, C.saldo
 			from Cuenta C, EstadoCuenta E
-			where E.idCuenta = C.id and E.enProceso = 0 and E.fechaFinal = @fechaOperacion;
+			where E.idCuenta = C.id and dateadd(month, 1 , E.fechaInicial) = @fechaOperacion;
 
 		-- Se actualiza el estado de cuenta anterior
 		update EstadoCuenta
 			set fechaFinal = @fechaOperacion, enProceso = 0, saldoFinal = C.saldo
 			from Cuenta C
-			where C.id = idCuenta and fechaInicial <= @fechaOperacion and enProceso = 1;
+			where C.id = idCuenta and dateadd(month, 1 , fechaInicial) = @fechaOperacion and enProceso = 1;
 
 		-- Se inserta un evento al modificar en el cliente
 		insert into Evento(tipoEvento, postDate, postIp)
@@ -434,7 +434,7 @@ while @fechaIncio <= @fechaFinal
 		update Cuenta
 			set saldo = saldo + interesesAcumulados, interesesAcumulados = 0
 			from EstadoCuenta E
-			where E.idCuenta = idCuenta and E.fechaInicial = @fechaOperacion and E.enProceso = 0;
+			where E.idCuenta = idCuenta and dateadd(month, 1 , E.fechaInicial) = @fechaOperacion and E.enProceso = 0;
 
 		set @fechaIncio = @fechaIncio + 1;
 	end;

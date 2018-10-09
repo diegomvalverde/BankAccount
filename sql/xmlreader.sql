@@ -511,7 +511,10 @@ while @fechaIncio <= @fechaFinal
 		/*
 		Cerrar y (o) abrir estados de cuenta
 		*/
-		set @low1 = 1;
+		set @low1 = min(E.id)
+			from EstadoCuenta E
+			where E.enProceso = 1;
+
 		select @hi1 = max(E.id)
 			from EstadoCuenta E
 			where E.enProceso = 1;
@@ -521,7 +524,7 @@ while @fechaIncio <= @fechaFinal
 
 				select @fechaEstadoCuenta = E.fechaInicial, @idCuenta = E.idCuenta
 					from EstadoCuenta E
-					where E.enProceso = 1;
+					where E.enProceso = 1 and E.id = @low1;
 
 				select @fechaEstadoCuenta = dateadd(month, 1 , @fechaEstadoCuenta);
 

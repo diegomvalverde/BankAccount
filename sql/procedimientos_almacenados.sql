@@ -3,6 +3,30 @@ go
 
 set dateformat dmy;  
 go
+
+create procedure dbo.casp_estadocuenta
+@codigoCuenta nvarchar(50),
+@salida as nvarchar(500) output 
+	as
+	begin
+		declare @tmp int;
+		select @tmp = max(EC.id)
+		from EstadoCuenta EC
+		where EC.idCuenta = @codigoCuenta and EC.enProceso = 0;
+
+		select @salida = @salida + 'Cuenta: ' + cast(EC.idCuenta as nvarchar) + char(10)
+								+ 'Fecha inicial: ' + cast(EC.fechaInicial as nvarchar) + char(10)
+								+ 'Fecha final: ' + cast(EC.fechaFinal as nvarchar) + char(10)
+								+ 'Saldo inicial: ' + cast(EC.saldoInicial as nvarchar) + char(10)
+								+ 'Saldo final: ' + cast(EC.saldoFinal as nvarchar) + char(10)
+								+ 'Saldo mínimo: ' + cast(EC.saldoMinimo as nvarchar) + char(10)
+								+ 'Cantidad operaciones manuales: ' + cast(EC.cantMaxManual as nvarchar) + char(10)
+								+ 'Cantidad operaciones ATM: ' + cast(EC.cantmMaxATM as nvarchar) + char(10)  
+		from EstadoCuenta EC 
+		where EC.id = @tmp
+			
+	end
+go
   
 create procedure dbo.casp_agregarcuenta
 	@clienteId nvarchar(50), --valorDocId
@@ -147,7 +171,7 @@ create procedure dbo.casp_estadocuenta
 		declare @tmp int;
 		select @tmp = max(EC.id)
 		from EstadoCuenta EC
-		where EC.idCuenta = @codigoCuenta and EC.enProceso = 0;
+		where EC.id = @codigoCuenta and EC.enProceso = 0;
 
 		select @salida = @salida + 'Cuenta: ' + cast(EC.idCuenta as nvarchar) + char(10)
 								+ 'Fecha inicial: ' + cast(EC.fechaInicial as nvarchar) + char(10)
